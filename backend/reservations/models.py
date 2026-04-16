@@ -1,11 +1,9 @@
 from django.db import models
-
-# Create your models here.
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from resources.models import Resource
 
-
+# Create your models here.
 class Reservation(models.Model):
 
     STATUS_CHOICES = [
