@@ -1,0 +1,59 @@
+.new-reservation-page {
+  width: min(620px, 100%);
+  margin: 0 auto;
+}
+
+.new-reservation-form {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--app-heading);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background-color: var(--app-surface-strong);
+  color: var(--app-heading);
+  font: inherit;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: var(--app-muted);
+}
+
+.form-input:focus {
+  border-color: rgba(34, 197, 94, 0.74);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.primary-button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+@media (max-width: 620px) {
+  .time-grid {
+    grid-template-columns: 1fr;
+  }
+}
