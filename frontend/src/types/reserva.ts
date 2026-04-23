@@ -1,16 +1,23 @@
 export interface Reserva {
   id: number;
-  recurso: number;
-  usuario?: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
-  estado?: string;
+  user: number;
+  user_username?: string;
+  resource: number;
+  resource_name?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status?: string;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CrearReservaPayload {
-  recurso: number;
-  fecha: string;
-  hora_inicio: string;
-  hora_fin: string;
+  user: number;
+  resource: number;
+  date: string;
+  start_time: string;
+  end_time: string;
+  notes?: string;
 }

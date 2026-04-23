@@ -1,24 +1,27 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getRecursos } from "../services/recursoService";
 import { crearReserva } from "../services/reservaService";
 import "./NewReservationPage.css";
 
+const DEFAULT_USER_ID = 1;
+
 function NewReservationPage() {
-  const [recurso, setRecurso] = useState("");
-  const [recursos, setRecursos] = useState([]);
-  const [fecha, setFecha] = useState("");
-  const [horaInicio, setHoraInicio] = useState("");
-  const [horaFin, setHoraFin] = useState("");
-  const [loadingRecursos, setLoadingRecursos] = useState(true);
+  const navigate = useNavigate();
+  const [resource, setResource] = useState("");
+  const [resources, setResources] = useState([]);
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [loadingResources, setLoadingResources] = useState(true);
   const [resourceError, setResourceError] = useState("");
   const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let isActive = true;
 
-    async function loadRecursos() {
+    async function loadResources() {
       try {
         const data = await getRecursos();
 
@@ -26,7 +29,7 @@ function NewReservationPage() {
           return;
         }
 
-        setRecursos(data);
+        setResources(data);
         setResourceError("");
       } catch (loadError) {
         if (!isActive) {
@@ -40,29 +43,28 @@ function NewReservationPage() {
         );
       } finally {
         if (isActive) {
-          setLoadingRecursos(false);
+          setLoadingResources(false);
         }
       }
     }
 
-    void loadRecursos();
+    void loadResources();
 
     return () => {
       isActive = false;
     };
   }, []);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
     setSubmitError("");
-    setSuccessMessage("");
 
-    if (!recurso || !fecha || !horaInicio || !horaFin) {
+    if (!resource || !date || !startTime || !endTime) {
       setSubmitError("Completa todos los campos.");
       return;
     }
 
-    if (horaInicio >= horaFin) {
+    if (startTime >= endTime) {
       setSubmitError("La hora de inicio debe ser menor a la de fin.");
       return;
     }
@@ -71,17 +73,14 @@ function NewReservationPage() {
 
     try {
       await crearReserva({
-        recurso: Number(recurso),
-        fecha,
-        hora_inicio: horaInicio,
-        hora_fin: horaFin,
+        user: DEFAULT_USER_ID,
+        resource: Number(resource),
+        date,
+        start_time: startTime,
+        end_time: endTime,
       });
 
-      setRecurso("");
-      setFecha("");
-      setHoraInicio("");
-      setHoraFin("");
-      setSuccessMessage("Reserva creada correctamente.");
+      navigate("/");
     } catch (createError) {
       setSubmitError(
         createError instanceof Error
@@ -111,29 +110,26 @@ function NewReservationPage() {
         <p className="status-text status-text--error">{submitError}</p>
       ) : null}
 
-      {successMessage ? (
-        <p className="status-text status-text--success">{successMessage}</p>
-      ) : null}
-
       <form onSubmit={handleSubmit} className="panel-card new-reservation-form">
         <div className="form-group">
           <label>Recurso</label>
           <select
             className="form-input"
-            value={recurso}
-            onChange={(e) => setRecurso(e.target.value)}
-            disabled={loadingRecursos || recursos.length === 0}
+            value={resource}
+            onChange={(event) => setResource(event.target.value)}
+            disabled={loadingResources || resources.length === 0}
           >
             <option value="">
-              {loadingRecursos
+              {loadingResources
                 ? "Cargando recursos..."
-                : recursos.length === 0
+                : resources.length === 0
                   ? "Sin recursos disponibles"
                   : "Selecciona un recurso"}
             </option>
-            {recursos.map((item) => (
+            {resources.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.nombre}
+                {item.name}
+                {item.resource_type_name ? ` (${item.resource_type_name})` : ""}
               </option>
             ))}
           </select>
@@ -144,8 +140,8 @@ function NewReservationPage() {
           <input
             className="form-input"
             type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
           />
         </div>
 
@@ -155,8 +151,8 @@ function NewReservationPage() {
             <input
               className="form-input"
               type="time"
-              value={horaInicio}
-              onChange={(e) => setHoraInicio(e.target.value)}
+              value={startTime}
+              onChange={(event) => setStartTime(event.target.value)}
             />
           </div>
 
@@ -165,8 +161,8 @@ function NewReservationPage() {
             <input
               className="form-input"
               type="time"
-              value={horaFin}
-              onChange={(e) => setHoraFin(e.target.value)}
+              value={endTime}
+              onChange={(event) => setEndTime(event.target.value)}
             />
           </div>
         </div>
@@ -174,7 +170,7 @@ function NewReservationPage() {
         <button
           type="submit"
           className="primary-button"
-          disabled={isSubmitting || loadingRecursos || recursos.length === 0}
+          disabled={isSubmitting || loadingResources || resources.length === 0}
         >
           {isSubmitting ? "Guardando..." : "Guardar reserva"}
         </button>
