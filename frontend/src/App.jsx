@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import AboutPage from "./pages/AboutPage";
 import NewReservationPage from "./pages/NewReservationPage";
@@ -6,8 +5,6 @@ import ReservationsPage from "./pages/ReservationsPage";
 import "./App.css";
 
 function App() {
-  const [reservations, setReservations] = useState([]);
-
   return (
     <div className="app-shell">
       <div className="app-layout">
@@ -28,25 +25,9 @@ function App() {
         </nav>
 
         <Routes>
-          <Route
-            path="/"
-            element={
-              <ReservationsPage
-                reservations={reservations}
-                setReservations={setReservations}
-              />
-            }
-          />
+          <Route path="/" element={<ReservationsPage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route
-            path="/new"
-            element={
-              <NewReservationPage
-                reservations={reservations}
-                setReservations={setReservations}
-              />
-            }
-          />
+          <Route path="/new" element={<NewReservationPage />} />
         </Routes>
       </div>
     </div>
