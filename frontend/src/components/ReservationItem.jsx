@@ -1,6 +1,6 @@
 import "./ReservationItem.css";
 
-function ReservationItem({ reservation, onDelete }) {
+function ReservationItem({ reservation, onDelete, isDeleting = false }) {
   const { recurso, fecha, hora } = reservation;
 
   return (
@@ -22,9 +22,10 @@ function ReservationItem({ reservation, onDelete }) {
         <button
           className="app-button app-button--danger"
           type="button"
+          disabled={isDeleting}
           onClick={() => onDelete(reservation.id)}
         >
-          Eliminar
+          {isDeleting ? "Eliminando..." : "Eliminar"}
         </button>
       </div>
     </li>

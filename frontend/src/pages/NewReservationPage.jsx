@@ -1,38 +1,96 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getRecursos } from "../services/recursoService";
+import { crearReserva } from "../services/reservaService";
 import "./NewReservationPage.css";
 
-function NewReservationPage({ reservations, setReservations }) {
+function NewReservationPage() {
   const [recurso, setRecurso] = useState("");
+  const [recursos, setRecursos] = useState([]);
   const [fecha, setFecha] = useState("");
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFin, setHoraFin] = useState("");
+  const [loadingRecursos, setLoadingRecursos] = useState(true);
+  const [resourceError, setResourceError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadRecursos() {
+      try {
+        const data = await getRecursos();
+
+        if (!isActive) {
+          return;
+        }
+
+        setRecursos(data);
+        setResourceError("");
+      } catch (loadError) {
+        if (!isActive) {
+          return;
+        }
+
+        setResourceError(
+          loadError instanceof Error
+            ? loadError.message
+            : "No se pudieron cargar los recursos."
+        );
+      } finally {
+        if (isActive) {
+          setLoadingRecursos(false);
+        }
+      }
+    }
+
+    void loadRecursos();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  async function handleSubmit(e) {
     e.preventDefault();
+    setSubmitError("");
+    setSuccessMessage("");
 
     if (!recurso || !fecha || !horaInicio || !horaFin) {
-      alert("Completá todos los campos");
+      setSubmitError("Completa todos los campos.");
       return;
     }
 
     if (horaInicio >= horaFin) {
-      alert("La hora de inicio debe ser menor a la de fin");
+      setSubmitError("La hora de inicio debe ser menor a la de fin.");
       return;
     }
 
-    const nuevaReserva = {
-      id: Date.now(),
-      recurso,
-      fecha,
-      hora: `${horaInicio} - ${horaFin}`,
-    };
+    setIsSubmitting(true);
 
-    setReservations([...reservations, nuevaReserva]);
+    try {
+      await crearReserva({
+        recurso: Number(recurso),
+        fecha,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+      });
 
-    setRecurso("");
-    setFecha("");
-    setHoraInicio("");
-    setHoraFin("");
+      setRecurso("");
+      setFecha("");
+      setHoraInicio("");
+      setHoraFin("");
+      setSuccessMessage("Reserva creada correctamente.");
+    } catch (createError) {
+      setSubmitError(
+        createError instanceof Error
+          ? createError.message
+          : "No se pudo crear la reserva."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -45,16 +103,40 @@ function NewReservationPage({ reservations, setReservations }) {
         </p>
       </header>
 
+      {resourceError ? (
+        <p className="status-text status-text--error">{resourceError}</p>
+      ) : null}
+
+      {submitError ? (
+        <p className="status-text status-text--error">{submitError}</p>
+      ) : null}
+
+      {successMessage ? (
+        <p className="status-text status-text--success">{successMessage}</p>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="panel-card new-reservation-form">
         <div className="form-group">
           <label>Recurso</label>
-          <input
+          <select
             className="form-input"
-            type="text"
             value={recurso}
             onChange={(e) => setRecurso(e.target.value)}
-            placeholder="Ej: Cancha 1"
-          />
+            disabled={loadingRecursos || recursos.length === 0}
+          >
+            <option value="">
+              {loadingRecursos
+                ? "Cargando recursos..."
+                : recursos.length === 0
+                  ? "Sin recursos disponibles"
+                  : "Selecciona un recurso"}
+            </option>
+            {recursos.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.nombre}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
@@ -89,8 +171,12 @@ function NewReservationPage({ reservations, setReservations }) {
           </div>
         </div>
 
-        <button type="submit" className="primary-button">
-          Guardar reserva
+        <button
+          type="submit"
+          className="primary-button"
+          disabled={isSubmitting || loadingRecursos || recursos.length === 0}
+        >
+          {isSubmitting ? "Guardando..." : "Guardar reserva"}
         </button>
       </form>
     </section>
