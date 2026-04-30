@@ -40,3 +40,30 @@ class ReservationSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class ReservationUpdateSerializer(serializers.ModelSerializer):
+    """
+    Solo para PATCH /api/reservations/<id>/.
+    user y resource no se pueden cambiar una vez creada la reserva.
+    Las validaciones de negocio (solape, recurso activo, etc.) siguen
+    corriendo porque el modelo llama full_clean() en save().
+    """
+    resource_name = serializers.CharField(source="resource.name", read_only=True)
+    user_username = serializers.CharField(source="user.username", read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = [
+            "id",
+            "user_username",
+            "resource_name",
+            "date",
+            "start_time",
+            "end_time",
+            "status",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user_username", "resource_name", "created_at", "updated_at"]
