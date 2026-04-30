@@ -35,16 +35,15 @@ Repositorio único compartido (sin forks) con la siguiente estrategia de ramas:
 | Rama | Propósito |
 |------|-----------|
 | `main` | Versión estable — se toca solo cuando hay algo funcional y cerrado |
-| `develop` | Rama principal de trabajo durante el desarrollo |
 | `feature/*` | Desarrollo de nuevas funcionalidades |
 
-> **Nota:** Estamos en fase de desarrollo activo. El trabajo diario ocurre en `develop`. Los merges a `main` se reservan para hitos concretos (módulo completo, MVP, entrega).
+> **Nota:** Estamos en fase de desarrollo activo. Todo el trabajo ocurre en ramas `feature/*`. Los merges a `main` se reservan para hitos concretos (módulo completo, MVP, entrega).
 
 ### Paso a paso
 
 ```bash
-# 1. Partir siempre desde develop actualizado
-git checkout develop
+# 1. Partir siempre desde main actualizado
+git checkout main
 git pull
 
 # 2. Crear rama para la feature
@@ -55,7 +54,7 @@ git add .
 git commit -m "feat: descripción del cambio"
 git push origin feature/nombre-descriptivo
 
-# 4. Abrir Pull Request hacia develop en GitHub
+# 4. Abrir Pull Request hacia main en GitHub
 # 5. Esperar revisión antes del merge
 ```
 
@@ -70,7 +69,7 @@ docs:      cambios en documentación
 
 ### Protección de ramas
 
-La rama `develop` tiene activada la protección en GitHub (Branch protection rules), lo que impide push directo. Todo cambio entra únicamente por Pull Request revisado por el equipo.
+La rama `main` tiene activada la protección en GitHub (Branch protection rules), lo que impide push directo. Todo cambio entra únicamente por Pull Request revisado por el equipo.
 
 ---
 
