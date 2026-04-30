@@ -1,42 +1,48 @@
 import { useEffect, useState } from "react";
 import ReservationItem from "../components/ReservationItem";
-import { getReservations } from "../services/reservationsService";
+import { getReservas } from "../services/reservaService";
 
-function ReservationsPage({ reservations, setReservations }) {
+function ReservationsPage() {
+  const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadReservations() {
       try {
-        const data = await getReservations();
-        if (!cancelled) setReservations(data);
-      } catch (err) {
-        if (!cancelled) setError(err.message);
+        const data = await getReservas();
+
+        if (cancelled) {
+          return;
+        }
+
+        setReservations(data);
+        setError("");
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "No se pudieron cargar las reservas."
+        );
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
-    loadReservations();
+    void loadReservations();
 
-    // Cleanup: evita setear estado si el componente se desmonta
-    // antes de que responda el fetch.
     return () => {
       cancelled = true;
     };
-    // Deps vacías: cargamos una sola vez al montar.
-    // `setReservations` es estable (viene de useState en App).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function handleDelete(id) {
-    // TODO: cuando el backend exponga DELETE /api/reservations/:id/
-    // disparar la llamada antes de sacarlo del estado local.
-    setReservations((prev) => prev.filter((r) => r.id !== id));
-  }
 
   return (
     <section className="page page--wide">
@@ -48,24 +54,26 @@ function ReservationsPage({ reservations, setReservations }) {
         </p>
       </header>
 
-      {loading && <p className="status-text">Cargando reservas...</p>}
-      {error && <p className="status-text">Error: {error}</p>}
+      {loading ? <p className="status-text">Cargando reservas...</p> : null}
 
-      {!loading && !error && (
-        <ul className="reservations-list">
-          {reservations.length === 0 ? (
-            <p className="status-text">Todavía no hay reservas.</p>
-          ) : (
-            reservations.map((reserva) => (
+      {!loading && error ? (
+        <p className="status-text status-text--error">{error}</p>
+      ) : null}
+
+      {!loading && !error ? (
+        reservations.length === 0 ? (
+          <p className="status-text">Todavia no hay reservas.</p>
+        ) : (
+          <ul className="reservations-list">
+            {reservations.map((reservation) => (
               <ReservationItem
-                key={reserva.id}
-                reservation={reserva}
-                onDelete={handleDelete}
+                key={reservation.id}
+                reservation={reservation}
               />
-            ))
-          )}
-        </ul>
-      )}
+            ))}
+          </ul>
+        )
+      ) : null}
     </section>
   );
 }
