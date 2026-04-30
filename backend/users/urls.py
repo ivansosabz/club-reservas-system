@@ -7,8 +7,8 @@ Ruta final (con el prefijo /api/):
 
 from django.urls import path
 
-from .views import UserListView
+from .views import user_list
 
 urlpatterns = [
-    path("users/", UserListView.as_view(), name="user-list"),
+    path("users/", user_list, name="user-list"),
 ]

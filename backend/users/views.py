@@ -7,14 +7,17 @@ al crear una reserva — hasta que armemos auth en la Etapa 5).
 """
 
 from django.contrib.auth.models import User
-from rest_framework import generics
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from .serializers import UserSerializer
 
 
-class UserListView(generics.ListAPIView):
+@api_view(["GET"])
+def user_list(request):
     """
     GET /api/users/   -> lista de usuarios registrados.
     """
-    queryset = User.objects.all().order_by("username")
-    serializer_class = UserSerializer
+    users = User.objects.all().order_by("username")
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)

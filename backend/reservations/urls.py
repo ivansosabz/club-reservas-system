@@ -8,17 +8,17 @@ Rutas (con el prefijo /api/):
 
 from django.urls import path
 
-from .views import ReservationListCreateView, ReservationDetailUpdateView
+from .views import reservation_list_create, reservation_detail_update
 
 urlpatterns = [
     path(
         "reservations/",
-        ReservationListCreateView.as_view(),
+        reservation_list_create,
         name="reservation-list-create",
     ),
     path(
         "reservations/<int:pk>/",
-        ReservationDetailUpdateView.as_view(),
+        reservation_detail_update,
         name="reservation-detail-update",
     ),
 ]

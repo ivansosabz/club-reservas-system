@@ -10,30 +10,40 @@ Flujo de un POST:
     5. Si alguna validación falla, el error se devuelve al front como 400.
 """
 
-from rest_framework import generics
+from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from .models import Reservation
 from .serializers import ReservationSerializer, ReservationUpdateSerializer
 
 
-class ReservationListCreateView(generics.ListCreateAPIView):
+@api_view(["GET", "POST"])
+def reservation_list_create(request):
     """
     GET  /api/reservations/   -> lista de reservas
     POST /api/reservations/   -> crea una reserva
     """
-    serializer_class = ReservationSerializer
-
-    def get_queryset(self):
+    if request.method == "GET":
         # select_related reduce queries: en vez de N+1, hace un solo JOIN
         # por cada FK que vamos a mostrar (resource y user).
-        return (
+        reservations = (
             Reservation.objects
             .select_related("resource", "user")
             .all()
         )
+        serializer = ReservationSerializer(reservations, many=True)
+        return Response(serializer.data)
+
+    serializer = ReservationSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class ReservationDetailUpdateView(generics.RetrieveUpdateAPIView):
+@api_view(["GET", "PATCH"])
+def reservation_detail_update(request, pk):
     """
     GET   /api/reservations/<id>/  -> detalle de una reserva
     PATCH /api/reservations/<id>/  -> edición parcial (fecha, horario, status, notas)
@@ -41,18 +51,22 @@ class ReservationDetailUpdateView(generics.RetrieveUpdateAPIView):
     PUT no está habilitado — usamos PATCH para ediciones parciales.
     Para cancelar: PATCH con {"status": "cancelled"}.
     """
-    http_method_names = ["get", "patch"]  # deshabilitamos PUT explícitamente
+    reservation = get_object_or_404(
+        Reservation.objects.select_related("resource", "user"),
+        pk=pk,
+    )
 
-    def get_queryset(self):
-        return (
-            Reservation.objects
-            .select_related("resource", "user")
-            .all()
-        )
-
-    def get_serializer_class(self):
+    if request.method == "GET":
         # GET usa el serializer completo (incluye user y resource como IDs)
-        # PATCH usa el restringido (user y resource no se pueden cambiar)
-        if self.request.method == "PATCH":
-            return ReservationUpdateSerializer
-        return ReservationSerializer
+        serializer = ReservationSerializer(reservation)
+        return Response(serializer.data)
+
+    # PATCH usa el restringido (user y resource no se pueden cambiar)
+    serializer = ReservationUpdateSerializer(
+        reservation,
+        data=request.data,
+        partial=True,
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)

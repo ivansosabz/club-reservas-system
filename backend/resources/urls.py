@@ -10,9 +10,9 @@ así que las rutas finales quedan:
 
 from django.urls import path
 
-from .views import ResourceListView, ResourceTypeListView
+from .views import resource_list, resource_type_list
 
 urlpatterns = [
-    path("resource-types/", ResourceTypeListView.as_view(), name="resource-type-list"),
-    path("resources/", ResourceListView.as_view(), name="resource-list"),
+    path("resource-types/", resource_type_list, name="resource-type-list"),
+    path("resources/", resource_list, name="resource-list"),
 ]
