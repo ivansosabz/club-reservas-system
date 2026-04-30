@@ -1,11 +1,24 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ReservationItem from "../components/ReservationItem";
 import { getReservas } from "../services/reservaService";
+import type { Reserva } from "../types/reserva";
 
 function ReservationsPage() {
-  const [reservations, setReservations] = useState([]);
+  const location = useLocation();
+  const [reservations, setReservations] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState(
+    (location.state as { successMessage?: string } | null)?.successMessage ?? ""
+  );
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +68,10 @@ function ReservationsPage() {
       </header>
 
       {loading ? <p className="status-text">Cargando reservas...</p> : null}
+
+      {successMessage ? (
+        <p className="status-text status-text--success">{successMessage}</p>
+      ) : null}
 
       {!loading && error ? (
         <p className="status-text status-text--error">{error}</p>

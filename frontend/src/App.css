@@ -202,6 +202,19 @@ body {
 
 .status-text--success {
   color: #86efac;
+  font-weight: 500;
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .about-grid {
