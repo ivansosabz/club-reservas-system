@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { getRecursos } from "../services/recursoService";
 import { crearReserva } from "../services/reservaService";
 import type { Recurso } from "../types/recurso";
@@ -82,7 +82,7 @@ function NewReservationPage() {
         end_time: endTime,
       } as CrearReservaPayload);
 
-      navigate("/");
+      navigate("/", { state: { successMessage: "Reserva creada con éxito" } });
     } catch (createError) {
       setSubmitError(
         createError instanceof Error

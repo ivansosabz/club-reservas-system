@@ -7,7 +7,7 @@ Críticas (impactan funcionalidad)
 
 # Importantes (deuda técnica)
 
-4. Frontend JS/TS mezclado — Pages y componentes en .jsx pero servicios en .ts. Debería ser todo TypeScript
+4. (## HECHO ##)Frontend JS/TS mezclado — Pages y componentes en .jsx pero servicios en .ts. Debería ser todo TypeScript
 5. Frontend preparado para auth pero sin backend — authService.ts apunta a /auth/login/ que no existe todavía
 6. (## HECHO ##) CSS innecesario — index.css tiene estilos de template que son sobrescritos por App.css
 7. Directorios vacíos — hooks/, routes/, styles/ sin contenido
