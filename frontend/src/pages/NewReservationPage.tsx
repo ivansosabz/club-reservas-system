@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getRecursos } from "../services/recursoService";
 import { crearReserva } from "../services/reservaService";
+import type { Recurso } from "../types/recurso";
+import type { CrearReservaPayload } from "../types/reserva";
 import "./NewReservationPage.css";
 
 const DEFAULT_USER_ID = 1;
@@ -9,7 +11,7 @@ const DEFAULT_USER_ID = 1;
 function NewReservationPage() {
   const navigate = useNavigate();
   const [resource, setResource] = useState("");
-  const [resources, setResources] = useState([]);
+  const [resources, setResources] = useState<Recurso[]>([]);
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -55,7 +57,7 @@ function NewReservationPage() {
     };
   }, []);
 
-  async function handleSubmit(event) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setSubmitError("");
 
@@ -78,7 +80,7 @@ function NewReservationPage() {
         date,
         start_time: startTime,
         end_time: endTime,
-      });
+      } as CrearReservaPayload);
 
       navigate("/");
     } catch (createError) {

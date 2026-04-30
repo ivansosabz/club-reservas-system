@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import ReservationItem from "../components/ReservationItem";
 import { getReservas } from "../services/reservaService";
+import type { Reserva } from "../types/reserva";
 
 function ReservationsPage() {
-  const [reservations, setReservations] = useState([]);
+  const [reservations, setReservations] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
