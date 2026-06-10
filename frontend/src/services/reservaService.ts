@@ -13,3 +13,9 @@ export async function crearReserva(
     body: JSON.stringify(payload),
   });
 }
+
+export async function eliminarReserva(id: number): Promise<void> {
+  await apiFetch<void>(`/reservations/${id}/`, {
+    method: "DELETE",
+  });
+}

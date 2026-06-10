@@ -278,3 +278,28 @@ class ReservationAPITest(APITestCase):
         )
         response = self.client.get(self.list_url)
         self.assertEqual(len(response.data), 2)
+
+    def test_delete_reservation_returns_204(self):
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        response = self.client.delete(self._detail_url(pk))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_reservation_removes_it(self):
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        self.client.delete(self._detail_url(pk))
+        get_resp = self.client.get(self._detail_url(pk))
+        self.assertEqual(get_resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_nonexistent_returns_404(self):
+        response = self.client.delete(self._detail_url(99999))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_method_not_allowed_on_list(self):
+        response = self.client.delete(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

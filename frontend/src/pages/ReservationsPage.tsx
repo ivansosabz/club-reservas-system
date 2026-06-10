@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ReservationItem from "../components/ReservationItem";
-import { getReservas } from "../services/reservaService";
+import { eliminarReserva, getReservas } from "../services/reservaService";
 import type { Reserva } from "../types/reserva";
 
 function ReservationsPage() {
@@ -9,6 +9,7 @@ function ReservationsPage() {
   const [reservations, setReservations] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [successMessage, setSuccessMessage] = useState(
     (location.state as { successMessage?: string } | null)?.successMessage ?? ""
   );
@@ -57,6 +58,27 @@ function ReservationsPage() {
     };
   }, []);
 
+  const handleDelete = useCallback(async (id: number) => {
+    setDeletingIds((prev) => new Set(prev).add(id));
+
+    try {
+      await eliminarReserva(id);
+      setReservations((prev) => prev.filter((r) => r.id !== id));
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "No se pudo eliminar la reserva."
+      );
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }, []);
+
   return (
     <section className="page page--wide">
       <header className="page-header">
@@ -86,6 +108,8 @@ function ReservationsPage() {
               <ReservationItem
                 key={reservation.id}
                 reservation={reservation}
+                onDelete={handleDelete}
+                isDeleting={deletingIds.has(reservation.id)}
               />
             ))}
           </ul>

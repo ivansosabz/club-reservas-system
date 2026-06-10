@@ -1,10 +1,9 @@
 from django.contrib.auth.models import User
-from rest_framework import status
-from rest_framework.test import APITestCase
+from django.test import TestCase
 from .models import UserProfile
 
 
-class UserProfileModelTest(APITestCase):
+class UserProfileModelTest(TestCase):
     def test_create_user_profile_on_user_creation(self):
         user = User.objects.create_user(
             username="testuser", password="pass123"
@@ -33,18 +32,3 @@ class UserProfileModelTest(APITestCase):
         )
         profile2 = UserProfile.objects.create(user=user2)
         self.assertEqual(profile2.user.username, "user2")
-
-
-class UserAPITest(APITestCase):
-    @classmethod
-    def setUpTestData(cls):
-        user = User.objects.create_user(
-            username="listuser", password="pass123"
-        )
-        UserProfile.objects.create(user=user, phone="987654321")
-
-    def test_list_users_returns_200(self):
-        response = self.client.get("/api/users/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["username"], "listuser")

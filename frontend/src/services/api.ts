@@ -1,5 +1,35 @@
 const API_BASE_URL = "http://localhost:8000/api";
 
+function extractErrorMessages(errorData: unknown): string {
+  if (typeof errorData !== "object" || errorData === null) {
+    return String(errorData);
+  }
+
+  const obj = errorData as Record<string, unknown>;
+
+  if (typeof obj.detail === "string") {
+    return obj.detail;
+  }
+
+  if (Array.isArray(obj.non_field_errors)) {
+    return obj.non_field_errors.join(" ");
+  }
+
+  const messages: string[] = [];
+
+  for (const [field, value] of Object.entries(obj)) {
+    if (field === "non_field_errors") continue;
+
+    if (Array.isArray(value)) {
+      messages.push(value.join(" "));
+    } else if (typeof value === "string") {
+      messages.push(`${field}: ${value}`);
+    }
+  }
+
+  return messages.length > 0 ? messages.join(" ") : JSON.stringify(errorData);
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -22,11 +52,7 @@ export async function apiFetch<T>(
 
     try {
       const errorData = await response.json();
-      errorMessage =
-        errorData.detail ||
-        errorData.message ||
-        JSON.stringify(errorData) ||
-        errorMessage;
+      errorMessage = extractErrorMessages(errorData);
     } catch {
       errorMessage = response.statusText || errorMessage;
     }

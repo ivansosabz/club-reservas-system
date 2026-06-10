@@ -40,14 +40,12 @@ def reservation_list_create(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@api_view(["GET", "PATCH"])
+@api_view(["GET", "PATCH", "DELETE"])
 def reservation_detail_update(request, pk):
     """
-    GET   /api/reservations/<id>/  -> detalle de una reserva
-    PATCH /api/reservations/<id>/  -> edición parcial (fecha, horario, status, notas)
-
-    PUT no está habilitado — usamos PATCH para ediciones parciales.
-    Para cancelar: PATCH con {"status": "cancelled"}.
+    GET    /api/reservations/<id>/  -> detalle de una reserva
+    PATCH  /api/reservations/<id>/  -> edición parcial (fecha, horario, status, notas)
+    DELETE /api/reservations/<id>/  -> elimina una reserva
     """
     reservation = get_object_or_404(
         Reservation.objects.select_related("resource", "user"),
@@ -55,16 +53,18 @@ def reservation_detail_update(request, pk):
     )
 
     if request.method == "GET":
-        # GET usa el serializer completo (incluye user y resource como IDs)
         serializer = ReservationSerializer(reservation)
         return Response(serializer.data)
 
-    else:  # PATCH — user y resource no se pueden cambiar
-        serializer = ReservationUpdateSerializer(
-            reservation,
-            data=request.data,
-            partial=True,
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+    if request.method == "DELETE":
+        reservation.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = ReservationUpdateSerializer(
+        reservation,
+        data=request.data,
+        partial=True,
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)
