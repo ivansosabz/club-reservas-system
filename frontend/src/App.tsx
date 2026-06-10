@@ -26,19 +26,21 @@ function NavBar() {
             <NavLink className="nav-link" to="/new">
               Nueva reserva
             </NavLink>
-            <div className="nav-dropdown">
-              <span className="nav-link nav-dropdown-trigger">
-                Recursos
-              </span>
-              <div className="nav-dropdown-menu">
-                <NavLink className="nav-dropdown-item" to="/recursos">
-                  Gestionar recursos
-                </NavLink>
-                <NavLink className="nav-dropdown-item" to="/tipos-de-recurso">
-                  Tipos de recurso
-                </NavLink>
+            {user?.is_staff ? (
+              <div className="nav-dropdown">
+                <span className="nav-link nav-dropdown-trigger">
+                  Recursos
+                </span>
+                <div className="nav-dropdown-menu">
+                  <NavLink className="nav-dropdown-item" to="/recursos">
+                    Gestionar recursos
+                  </NavLink>
+                  <NavLink className="nav-dropdown-item" to="/tipos-de-recurso">
+                    Tipos de recurso
+                  </NavLink>
+                </div>
               </div>
-            </div>
+            ) : null}
             <NavLink className="nav-link" to="/about">
               Acerca de
             </NavLink>

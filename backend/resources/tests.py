@@ -63,8 +63,11 @@ class ResourceModelTest(APITestCase):
 class ResourceAPITest(APITestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user(
-            username="admin", password="pass123"
+        cls.staff_user = User.objects.create_user(
+            username="admin", password="pass123", is_staff=True
+        )
+        cls.regular_user = User.objects.create_user(
+            username="mateo", password="pass123"
         )
         cls.resource_type = ResourceType.objects.create(name="Cancha")
         Resource.objects.create(
@@ -84,7 +87,7 @@ class ResourceAPITest(APITestCase):
         )
 
     def setUp(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.staff_user)
 
     def test_list_active_resources_only(self):
         self.client.force_authenticate(user=None)
@@ -121,11 +124,17 @@ class ResourceAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(ResourceType.objects.count(), 2)
 
-    def test_create_resource_type_unauthenticated_returns_401(self):
+    def test_create_resource_type_unauthenticated_returns_403(self):
         self.client.force_authenticate(user=None)
         data = {"name": "Salon", "description": "Salon de eventos"}
         response = self.client.post("/api/resource-types/", data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_staff_cannot_create_resource_type(self):
+        self.client.force_authenticate(user=self.regular_user)
+        data = {"name": "Salon"}
+        response = self.client.post("/api/resource-types/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_resource_type_duplicate_returns_400(self):
         data = {"name": "Cancha"}
@@ -170,14 +179,23 @@ class ResourceAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Resource.objects.count(), 4)
 
-    def test_create_resource_unauthenticated_returns_401(self):
+    def test_create_resource_unauthenticated_returns_403(self):
         self.client.force_authenticate(user=None)
         data = {
             "name": "Cancha 3",
             "resource_type": self.resource_type.pk,
         }
         response = self.client.post("/api/resources/", data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_staff_cannot_create_resource(self):
+        self.client.force_authenticate(user=self.regular_user)
+        data = {
+            "name": "Cancha 3",
+            "resource_type": self.resource_type.pk,
+        }
+        response = self.client.post("/api/resources/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_resource_missing_type_returns_400(self):
         data = {"name": "Cancha 3"}
@@ -223,7 +241,7 @@ class ResourceAPITest(APITestCase):
     def test_delete_resource_with_reservations_returns_400(self):
         resource = Resource.objects.filter(is_active=True).first()
         Reservation.objects.create(
-            user=self.user,
+            user=self.staff_user,
             resource=resource,
             start_datetime=datetime(2030, 6, 1, 10, 0),
             end_datetime=datetime(2030, 6, 1, 11, 0),
@@ -240,7 +258,7 @@ class ResourceAPITest(APITestCase):
         response = self.client.get(f"/api/resources/{resource.pk}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_unauthenticated_patch_returns_401(self):
+    def test_unauthenticated_patch_returns_403(self):
         self.client.force_authenticate(user=None)
         resource = Resource.objects.filter(is_active=True).first()
         response = self.client.patch(
@@ -248,10 +266,28 @@ class ResourceAPITest(APITestCase):
             {"name": "X"},
             format="json",
         )
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_unauthenticated_delete_returns_401(self):
+    def test_non_staff_patch_returns_403(self):
+        self.client.force_authenticate(user=self.regular_user)
+        resource = Resource.objects.filter(is_active=True).first()
+        response = self.client.patch(
+            f"/api/resources/{resource.pk}/",
+            {"name": "X"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unauthenticated_delete_returns_403(self):
         self.client.force_authenticate(user=None)
         resource = Resource.objects.filter(is_active=True).first()
         response = self.client.delete(f"/api/resources/{resource.pk}/")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_staff_delete_returns_403(self):
+        self.client.force_authenticate(user=self.regular_user)
+        resource = Resource.objects.create(
+            name="Temporal", resource_type=self.resource_type
+        )
+        response = self.client.delete(f"/api/resources/{resource.pk}/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

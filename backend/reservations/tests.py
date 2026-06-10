@@ -225,6 +225,9 @@ class ReservationAPITest(APITestCase):
         cls.user = User.objects.create_user(
             username="apiuser", password="apipass123"
         )
+        cls.other_user = User.objects.create_user(
+            username="mateo", password="pass123"
+        )
         cls.staff_user = User.objects.create_user(
             username="staff", password="staffpass123", is_staff=True
         )
@@ -412,6 +415,7 @@ class ReservationAPITest(APITestCase):
             self.list_url, self._valid_payload(), format="json"
         )
         pk = create_resp.data["id"]
+        self.client.force_authenticate(user=self.staff_user)
         response = self.client.delete(self._detail_url(pk))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -420,7 +424,9 @@ class ReservationAPITest(APITestCase):
             self.list_url, self._valid_payload(), format="json"
         )
         pk = create_resp.data["id"]
+        self.client.force_authenticate(user=self.staff_user)
         self.client.delete(self._detail_url(pk))
+        self.client.force_authenticate(user=self.user)
         get_resp = self.client.get(self._detail_url(pk))
         self.assertEqual(get_resp.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -432,14 +438,41 @@ class ReservationAPITest(APITestCase):
         response = self.client.delete(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    def test_non_staff_patch_returns_403(self):
+    def test_owner_can_patch_when_pending(self):
         create_resp = self.client.post(
             self.list_url, self._valid_payload(), format="json"
         )
         pk = create_resp.data["id"]
         response = self.client.patch(
             self._detail_url(pk),
-            {"status": "confirmed"},
+            {"notes": "Actualizado por el dueno"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["notes"], "Actualizado por el dueno")
+
+    def test_owner_cannot_patch_when_confirmed(self):
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        Reservation.objects.filter(pk=pk).update(status="confirmed")
+        response = self.client.patch(
+            self._detail_url(pk),
+            {"notes": "Intento"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_owner_cannot_patch_others_reservation(self):
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.patch(
+            self._detail_url(pk),
+            {"notes": "Intento ajeno"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -640,10 +673,19 @@ class ReservationAPITest(APITestCase):
         )
         self.assertEqual(response.data["count"], 1)
 
-    def test_non_staff_delete_returns_204(self):
+    def test_non_staff_delete_returns_403(self):
         create_resp = self.client.post(
             self.list_url, self._valid_payload(), format="json"
         )
         pk = create_resp.data["id"]
+        response = self.client.delete(self._detail_url(pk))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_can_delete(self):
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        self.client.force_authenticate(user=self.staff_user)
         response = self.client.delete(self._detail_url(pk))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

@@ -316,7 +316,7 @@ function ReservationsPage() {
               <ReservationItem
                 key={reservation.id}
                 reservation={reservation}
-                onEdit={user?.is_staff ? openEdit : undefined}
+                onEdit={user?.is_staff || (reservation.user === user?.id && reservation.status === "pending") ? openEdit : undefined}
                 onDelete={handleDelete}
                 isDeleting={deletingIds.has(reservation.id)}
               />

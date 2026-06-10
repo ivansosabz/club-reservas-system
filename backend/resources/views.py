@@ -17,10 +17,10 @@ def resource_type_list_create(request):
         serializer = ResourceTypeSerializer(resource_types, many=True)
         return Response(serializer.data)
 
-    if not request.user.is_authenticated:
+    if not request.user.is_staff:
         return Response(
-            {"detail": "Autenticación requerida."},
-            status=status.HTTP_401_UNAUTHORIZED,
+            {"detail": "Solo el administrador puede gestionar tipos de recurso."},
+            status=status.HTTP_403_FORBIDDEN,
         )
 
     serializer = ResourceTypeSerializer(data=request.data)
@@ -38,10 +38,10 @@ def resource_type_detail(request, pk):
         serializer = ResourceTypeSerializer(resource_type)
         return Response(serializer.data)
 
-    if not request.user.is_authenticated:
+    if not request.user.is_staff:
         return Response(
-            {"detail": "Autenticación requerida."},
-            status=status.HTTP_401_UNAUTHORIZED,
+            {"detail": "Solo el administrador puede gestionar tipos de recurso."},
+            status=status.HTTP_403_FORBIDDEN,
         )
 
     if request.method == "DELETE":
@@ -78,10 +78,10 @@ def resource_list_create(request):
         serializer = ResourceSerializer(resources, many=True)
         return Response(serializer.data)
 
-    if not request.user.is_authenticated:
+    if not request.user.is_staff:
         return Response(
-            {"detail": "Autenticación requerida."},
-            status=status.HTTP_401_UNAUTHORIZED,
+            {"detail": "Solo el administrador puede gestionar recursos."},
+            status=status.HTTP_403_FORBIDDEN,
         )
 
     serializer = ResourceSerializer(data=request.data)
@@ -101,10 +101,10 @@ def resource_detail(request, pk):
         serializer = ResourceSerializer(resource)
         return Response(serializer.data)
 
-    if not request.user.is_authenticated:
+    if not request.user.is_staff:
         return Response(
-            {"detail": "Autenticación requerida."},
-            status=status.HTTP_401_UNAUTHORIZED,
+            {"detail": "Solo el administrador puede gestionar recursos."},
+            status=status.HTTP_403_FORBIDDEN,
         )
 
     if request.method == "DELETE":
