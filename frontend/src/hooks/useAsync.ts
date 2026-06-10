@@ -10,9 +10,10 @@ interface UseAsyncResult<T> {
 
 export function useAsync<T>(
   fn: () => Promise<T>,
-  deps: unknown[] = []
+  deps: unknown[] = [],
+  initialValue: T | null = null
 ): UseAsyncResult<T> {
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData] = useState<T | null>(initialValue);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const abortRef = useRef<AbortController | null>(null);

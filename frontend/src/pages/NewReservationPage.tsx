@@ -20,7 +20,7 @@ function NewReservationPage() {
     data: resources,
     loading: loadingResources,
     error: resourceError,
-  } = useAsync(getRecursos, []);
+  } = useAsync(getRecursos, [], []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();

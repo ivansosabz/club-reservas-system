@@ -48,6 +48,12 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      throw new Error("Sesión expirada. Inicia sesión nuevamente.");
+    }
+
     let errorMessage = "Ocurrió un error en la petición";
 
     try {
