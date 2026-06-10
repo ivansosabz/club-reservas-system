@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import ReservationItem from "../components/ReservationItem";
+import { useAsync } from "../hooks/useAsync";
 import { eliminarReserva, getReservas } from "../services/reservaService";
-import type { Reserva } from "../types/reserva";
 
 function ReservationsPage() {
   const location = useLocation();
-  const [reservations, setReservations] = useState<Reserva[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    data: reservations,
+    loading,
+    error,
+    setData: setReservations,
+  } = useAsync(getReservas, []);
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [successMessage, setSuccessMessage] = useState(
     (location.state as { successMessage?: string } | null)?.successMessage ?? ""
@@ -21,55 +25,17 @@ function ReservationsPage() {
     }
   }, [successMessage]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadReservations() {
-      try {
-        const data = await getReservas();
-
-        if (cancelled) {
-          return;
-        }
-
-        setReservations(data);
-        setError("");
-      } catch (loadError) {
-        if (cancelled) {
-          return;
-        }
-
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "No se pudieron cargar las reservas."
-        );
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadReservations();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const handleDelete = useCallback(async (id: number) => {
     setDeletingIds((prev) => new Set(prev).add(id));
 
     try {
       await eliminarReserva(id);
-      setReservations((prev) => prev.filter((r) => r.id !== id));
-    } catch (deleteError) {
-      setError(
-        deleteError instanceof Error
-          ? deleteError.message
-          : "No se pudo eliminar la reserva."
+
+      setReservations(
+        (reservations ?? []).filter((r) => r.id !== id)
       );
+    } catch (deleteError) {
+      console.error(deleteError);
     } finally {
       setDeletingIds((prev) => {
         const next = new Set(prev);
@@ -77,7 +43,7 @@ function ReservationsPage() {
         return next;
       });
     }
-  }, []);
+  }, [reservations, setReservations]);
 
   return (
     <section className="page page--wide">
@@ -89,7 +55,7 @@ function ReservationsPage() {
         </p>
       </header>
 
-      {loading ? <p className="status-text">Cargando reservas...</p> : null}
+      {loading ? <LoadingSkeleton count={3} /> : null}
 
       {successMessage ? (
         <p className="status-text status-text--success">{successMessage}</p>
@@ -99,21 +65,30 @@ function ReservationsPage() {
         <p className="status-text status-text--error">{error}</p>
       ) : null}
 
-      {!loading && !error ? (
-        reservations.length === 0 ? (
-          <p className="status-text">Todavia no hay reservas.</p>
-        ) : (
-          <ul className="reservations-list">
-            {reservations.map((reservation) => (
-              <ReservationItem
-                key={reservation.id}
-                reservation={reservation}
-                onDelete={handleDelete}
-                isDeleting={deletingIds.has(reservation.id)}
-              />
-            ))}
-          </ul>
-        )
+      {!loading && !error && reservations && reservations.length > 0 ? (
+        <ul className="reservations-list">
+          {reservations.map((reservation) => (
+            <ReservationItem
+              key={reservation.id}
+              reservation={reservation}
+              onDelete={handleDelete}
+              isDeleting={deletingIds.has(reservation.id)}
+            />
+          ))}
+        </ul>
+      ) : null}
+
+      {!loading && !error && reservations && reservations.length === 0 ? (
+        <div className="empty-state">
+          <p className="empty-state-icon">[ ]</p>
+          <p className="empty-state-title">Todavia no hay reservas</p>
+          <p className="empty-state-description">
+            Crea tu primera reserva para empezar a gestionar los espacios del club.
+          </p>
+          <Link to="/new" className="primary-button" style={{ textDecoration: "none", display: "inline-flex" }}>
+            Nueva reserva
+          </Link>
+        </div>
       ) : null}
     </section>
   );

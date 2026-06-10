@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useAsync } from "../hooks/useAsync";
 import { getRecursos } from "../services/recursoService";
 import { crearReserva } from "../services/reservaService";
-import type { Recurso } from "../types/recurso";
 import type { CrearReservaPayload } from "../types/reserva";
 import "./NewReservationPage.css";
 
@@ -11,51 +11,16 @@ function NewReservationPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [resource, setResource] = useState("");
-  const [resources, setResources] = useState<Recurso[]>([]);
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [loadingResources, setLoadingResources] = useState(true);
-  const [resourceError, setResourceError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    let isActive = true;
-
-    async function loadResources() {
-      try {
-        const data = await getRecursos();
-
-        if (!isActive) {
-          return;
-        }
-
-        setResources(data);
-        setResourceError("");
-      } catch (loadError) {
-        if (!isActive) {
-          return;
-        }
-
-        setResourceError(
-          loadError instanceof Error
-            ? loadError.message
-            : "No se pudieron cargar los recursos."
-        );
-      } finally {
-        if (isActive) {
-          setLoadingResources(false);
-        }
-      }
-    }
-
-    void loadResources();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
+  const {
+    data: resources,
+    loading: loadingResources,
+    error: resourceError,
+  } = useAsync(getRecursos, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();

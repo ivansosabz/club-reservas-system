@@ -1,0 +1,55 @@
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-list {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.skeleton-card {
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  padding: 20px;
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.08), transparent 46%),
+    rgba(17, 25, 35, 0.9);
+}
+
+.skeleton-row {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.08) 0%,
+    rgba(148, 163, 184, 0.2) 50%,
+    rgba(148, 163, 184, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: 45%;
+  height: 22px;
+  margin-bottom: 16px;
+}
+
+.skeleton-row-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skeleton-tag {
+  width: 120px;
+  height: 30px;
+}
