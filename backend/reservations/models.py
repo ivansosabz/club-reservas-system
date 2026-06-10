@@ -1,9 +1,12 @@
-from django.db import models
+from datetime import datetime
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db import models
+
 from resources.models import Resource
 
-# Create your models here.
+
 class Reservation(models.Model):
 
     STATUS_CHOICES = [
@@ -23,6 +26,7 @@ class Reservation(models.Model):
         related_name='reservations',
     )
     date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
     start_time = models.TimeField()
     end_time = models.TimeField()
     status = models.CharField(
@@ -40,49 +44,47 @@ class Reservation(models.Model):
         ordering = ['date', 'start_time']
 
     def clean(self):
-        """Validaciones de negocio — se ejecutan antes de guardar."""
+        if self.end_date is None:
+            self.end_date = self.date
 
-        # 1. end_time debe ser mayor que start_time
-        if self.start_time and self.end_time:
+        if self.end_date < self.date:
+            raise ValidationError(
+                "La fecha de fin no puede ser anterior a la fecha de inicio."
+            )
+
+        if self.end_date == self.date and self.start_time and self.end_time:
             if self.end_time <= self.start_time:
                 raise ValidationError(
                     "La hora de fin debe ser posterior a la hora de inicio."
                 )
 
-        # 2. El recurso debe estar activo
         if self.resource and not self.resource.is_active:
             raise ValidationError(
                 "Este recurso no está disponible para reservas."
             )
 
-        # 3. Verificar solapamiento con reservas existentes
         self._check_overlap()
 
     def _check_overlap(self):
-        """
-        Detecta si existe otra reserva activa que se solape con este horario.
-        Una reserva B solapa con A si:
-            B.start_time < A.end_time  AND  B.end_time > A.start_time
-        """
-        overlapping = Reservation.objects.filter(
+        self_start = datetime.combine(self.date, self.start_time)
+        self_end = datetime.combine(self.end_date, self.end_time)
+
+        qs = Reservation.objects.filter(
             resource=self.resource,
-            date=self.date,
             status__in=['pending', 'confirmed'],
-            start_time__lt=self.end_time,
-            end_time__gt=self.start_time,
         )
-
-        # Excluir la reserva actual al editar (no conflicto consigo misma)
         if self.pk:
-            overlapping = overlapping.exclude(pk=self.pk)
+            qs = qs.exclude(pk=self.pk)
 
-        if overlapping.exists():
-            raise ValidationError(
-                f"Ya existe una reserva para este recurso en ese horario."
-            )
+        for other in qs:
+            other_start = datetime.combine(other.date, other.start_time)
+            other_end = datetime.combine(other.end_date or other.date, other.end_time)
+            if self_start < other_end and self_end > other_start:
+                raise ValidationError(
+                    "Ya existe una reserva para este recurso en ese horario."
+                )
 
     def save(self, *args, **kwargs):
-        """Fuerza la validación antes de cada guardado."""
         self.full_clean()
         super().save(*args, **kwargs)
 

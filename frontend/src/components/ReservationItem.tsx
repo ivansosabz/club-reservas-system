@@ -13,7 +13,8 @@ interface ReservationItemProps {
 }
 
 function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: ReservationItemProps) {
-  const { resource_name, date, start_time, end_time, status } = reservation;
+  const { resource_name, date, end_date, start_time, end_time, status } = reservation;
+  const isMultiDay = end_date && end_date !== date;
 
   return (
     <li className="reservation-card">
@@ -24,7 +25,7 @@ function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: 
 
         <div className="reservation-card__details">
           <p>
-            <span>Fecha:</span> {date}
+            <span>Fecha:</span> {isMultiDay ? `${date} a ${end_date}` : date}
           </p>
           <p>
             <span>Hora:</span> {formatTime(start_time)} - {formatTime(end_time)}

@@ -5,6 +5,7 @@ export interface Reserva {
   resource: number;
   resource_name?: string;
   date: string;
+  end_date?: string | null;
   start_time: string;
   end_time: string;
   status?: string;
@@ -17,6 +18,7 @@ export interface CrearReservaPayload {
   user: number;
   resource: number;
   date: string;
+  end_date?: string;
   start_time: string;
   end_time: string;
   notes?: string;
@@ -25,6 +27,7 @@ export interface CrearReservaPayload {
 export interface ActualizarReservaPayload {
   resource?: number;
   date?: string;
+  end_date?: string;
   start_time?: string;
   end_time?: string;
   status?: string;

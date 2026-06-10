@@ -7,6 +7,15 @@ from resources.models import Resource, ResourceType
 from .models import Reservation
 
 
+def _equal_dates(d1, d2):
+    """Compare two dates allowing string or date objects."""
+    if isinstance(d1, str):
+        d1 = date.fromisoformat(d1)
+    if isinstance(d2, str):
+        d2 = date.fromisoformat(d2)
+    return d1 == d2
+
+
 class ReservationModelTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
@@ -131,6 +140,85 @@ class ReservationModelTest(APITestCase):
         with self.assertRaises(ValidationError):
             r2.full_clean()
 
+    def test_create_multi_day_reservation(self):
+        r = Reservation(
+            user=self.user,
+            resource=self.resource,
+            date=date(2026, 6, 10),
+            end_date=date(2026, 6, 12),
+            start_time=time(10, 0),
+            end_time=time(18, 0),
+        )
+        r.full_clean()
+        r.save()
+        self.assertEqual(r.end_date, date(2026, 6, 12))
+
+    def test_end_date_before_start_date_raises_error(self):
+        with self.assertRaises(ValidationError):
+            r = Reservation(
+                user=self.user,
+                resource=self.resource,
+                date=date(2026, 6, 15),
+                end_date=date(2026, 6, 14),
+                start_time=time(10, 0),
+                end_time=time(11, 0),
+            )
+            r.full_clean()
+
+    def test_multi_day_same_day_still_validates_time(self):
+        with self.assertRaises(ValidationError):
+            self._create_reservation(
+                start=time(11, 0), end=time(10, 0)
+            )
+
+    def test_multi_day_overlap_with_single_day(self):
+        self._create_reservation(
+            date_value=date(2026, 6, 10),
+            start=time(10, 0),
+            end=time(12, 0),
+        )
+        with self.assertRaises(ValidationError):
+            r = Reservation(
+                user=self.user,
+                resource=self.resource,
+                date=date(2026, 6, 9),
+                end_date=date(2026, 6, 11),
+                start_time=time(8, 0),
+                end_time=time(18, 0),
+            )
+            r.full_clean()
+
+    def test_multi_day_no_overlap_when_ends_before(self):
+        self._create_reservation(
+            date_value=date(2026, 6, 12),
+            start=time(10, 0),
+            end=time(12, 0),
+        )
+        r = Reservation(
+            user=self.user,
+            resource=self.resource,
+            date=date(2026, 6, 9),
+            end_date=date(2026, 6, 11),
+            start_time=time(8, 0),
+            end_time=time(20, 0),
+        )
+        r.full_clean()
+        r.save()
+        self.assertEqual(r.end_date, date(2026, 6, 11))
+
+    def test_multi_day_defaults_end_date_to_date(self):
+        r = Reservation(
+            user=self.user,
+            resource=self.resource,
+            date=date(2026, 6, 15),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+        )
+        r.full_clean()
+        r.save()
+        self.assertIsNotNone(r.end_date)
+        self.assertTrue(_equal_dates(r.end_date, r.date))
+
     def test_str_representation(self):
         reservation = self._create_reservation()
         expected = "Cancha 1 — 2026-06-15 10:00:00-11:00:00"
@@ -222,6 +310,31 @@ class ReservationAPITest(APITestCase):
         response = self.client.post(
             self.list_url,
             self._valid_payload(resource=inactive.pk),
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_multi_day_returns_201(self):
+        response = self.client.post(
+            self.list_url,
+            self._valid_payload(
+                date="2026-07-01",
+                end_date="2026-07-03",
+                start_time="09:00",
+                end_time="18:00",
+            ),
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["end_date"], "2026-07-03")
+
+    def test_create_multi_day_invalid_date_order_returns_400(self):
+        response = self.client.post(
+            self.list_url,
+            self._valid_payload(
+                date="2026-07-05",
+                end_date="2026-07-03",
+            ),
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

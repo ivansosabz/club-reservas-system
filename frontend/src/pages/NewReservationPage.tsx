@@ -12,6 +12,7 @@ function NewReservationPage() {
   const { user } = useAuth();
   const [resource, setResource] = useState("");
   const [date, setDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -31,21 +32,33 @@ function NewReservationPage() {
       return;
     }
 
-    if (startTime >= endTime) {
-      setSubmitError("La hora de inicio debe ser menor a la de fin.");
+    if (endDate && endDate < date) {
+      setSubmitError("La fecha de fin no puede ser anterior a la fecha de inicio.");
       return;
+    }
+
+    if (!endDate || endDate === date) {
+      if (startTime >= endTime) {
+        setSubmitError("La hora de inicio debe ser menor a la de fin.");
+        return;
+      }
     }
 
     setIsSubmitting(true);
 
     try {
-      await crearReserva({
+      const payload: CrearReservaPayload = {
         user: user!.id,
         resource: Number(resource),
         date,
         start_time: startTime,
         end_time: endTime,
-      } as CrearReservaPayload);
+      };
+      if (endDate && endDate !== date) {
+        payload.end_date = endDate;
+      }
+
+      await crearReserva(payload);
 
       navigate("/", { state: { successMessage: "Reserva creada con éxito" } });
     } catch (createError) {
@@ -103,12 +116,23 @@ function NewReservationPage() {
         </div>
 
         <div className="form-group">
-          <label>Fecha</label>
+          <label>Fecha de inicio</label>
           <input
             className="form-input"
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Fecha de fin <span className="form-hint">(opcional, si es varios dias)</span></label>
+          <input
+            className="form-input"
+            type="date"
+            value={endDate}
+            min={date || undefined}
+            onChange={(event) => setEndDate(event.target.value)}
           />
         </div>
 
