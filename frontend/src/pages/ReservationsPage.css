@@ -76,3 +76,40 @@
   color: #5a6170;
   white-space: nowrap;
 }
+
+.detail-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-modal__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.detail-modal__row span {
+  color: var(--app-muted);
+  font-size: 14px;
+}
+
+.detail-modal__row strong {
+  color: var(--app-heading);
+  font-size: 15px;
+  text-align: right;
+}
+
+.detail-modal__divider {
+  height: 1px;
+  background: var(--app-border);
+  margin: 4px 0;
+}
+
+.detail-modal__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}

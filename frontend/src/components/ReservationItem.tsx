@@ -9,19 +9,20 @@ function fmt(dt: string) {
 
 interface ReservationItemProps {
   reservation: Reserva;
-  onEdit?: (reservation: Reserva) => void;
-  onDelete?: (id: number) => void;
-  isDeleting?: boolean;
+  onClick?: (reservation: Reserva) => void;
 }
 
-function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: ReservationItemProps) {
+function ReservationItem({ reservation, onClick }: ReservationItemProps) {
   const { resource_name, start_datetime, end_datetime, status, user_email, user_phone, user_username } = reservation;
   const start = fmt(start_datetime);
   const end = fmt(end_datetime);
   const isMultiDay = start.date !== end.date;
 
   return (
-    <li className="reservation-card">
+    <li
+      className={`reservation-card${onClick ? " reservation-card--clickable" : ""}`}
+      onClick={() => onClick?.(reservation)}
+    >
       <div>
         <h3 className="reservation-card__title">
           {resource_name || "Recurso sin asignar"}
@@ -45,28 +46,6 @@ function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: 
             {user_email ? <p><span>Email:</span> {user_email}</p> : null}
             {user_phone ? <p><span>Tel:</span> {user_phone}</p> : null}
           </div>
-        ) : null}
-      </div>
-
-      <div className="reservation-card__actions">
-        {onEdit ? (
-          <button
-            className="app-button"
-            type="button"
-            onClick={() => onEdit(reservation)}
-          >
-            Editar
-          </button>
-        ) : null}
-        {onDelete ? (
-          <button
-            className="app-button app-button--danger"
-            type="button"
-            disabled={isDeleting}
-            onClick={() => onDelete(reservation.id)}
-          >
-            {isDeleting ? "Eliminando..." : "Eliminar"}
-          </button>
         ) : null}
       </div>
     </li>

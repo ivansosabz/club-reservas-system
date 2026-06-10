@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAsync } from "../hooks/useAsync";
+import { useAuth } from "../contexts/AuthContext";
 import Modal from "../components/Modal";
 import {
   getRecursos,
@@ -14,12 +15,14 @@ import "./AdminResourceTypesPage.css";
 const PAGE_SIZE = 10;
 
 function AdminResourcesPage() {
+  const { user } = useAuth();
+  const isStaff = user?.is_staff ?? false;
   const {
     data: recursos,
     loading,
     error,
     refresh,
-  } = useAsync(() => getRecursos(true), [], []);
+  } = useAsync(() => getRecursos(isStaff), [], []);
   const [page, setPage] = useState(1);
   const { data: tipos } = useAsync(getTiposRecurso, [], []);
 
@@ -130,18 +133,23 @@ function AdminResourcesPage() {
   return (
     <section className="page page--wide">
       <header className="page-header">
-        <p className="page-kicker">Administracion</p>
+        <p className="page-kicker">{isStaff ? "Administracion" : "Club"}</p>
         <h1 className="page-title">Recursos</h1>
         <p className="page-description">
-          Administra los recursos reservables del club.
+          {isStaff
+            ? "Administra los recursos reservables del club."
+            : "Conoce los espacios disponibles para reservar."
+          }
         </p>
       </header>
 
-      <div className="admin-toolbar">
-        <button className="primary-button" onClick={openCreate}>
-          + Agregar recurso
-        </button>
-      </div>
+      {isStaff ? (
+        <div className="admin-toolbar">
+          <button className="primary-button" onClick={openCreate}>
+            + Agregar recurso
+          </button>
+        </div>
+      ) : null}
 
       {loading && <p className="status-text">Cargando...</p>}
       {error && <p className="status-text status-text--error">{error}</p>}
@@ -164,7 +172,7 @@ function AdminResourcesPage() {
                 <th>Tipo</th>
                 <th>Descripcion</th>
                 <th className="admin-cell-status">Estado</th>
-                <th className="admin-table-actions">Acciones</th>
+                {isStaff ? <th className="admin-table-actions">Acciones</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -190,26 +198,28 @@ function AdminResourcesPage() {
                       {r.is_active ? "Activo" : "Inactivo"}
                     </span>
                   </td>
-                  <td className="admin-cell-actions">
-                    <button
-                      className="app-button"
-                      onClick={() => openEdit(r)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="app-button"
-                      onClick={() => handleToggleActive(r)}
-                    >
-                      {r.is_active ? "Desactivar" : "Activar"}
-                    </button>
-                    <button
-                      className="app-button app-button--danger"
-                      onClick={() => handleDelete(r.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
+                  {isStaff ? (
+                    <td className="admin-cell-actions">
+                      <button
+                        className="app-button"
+                        onClick={() => openEdit(r)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="app-button"
+                        onClick={() => handleToggleActive(r)}
+                      >
+                        {r.is_active ? "Desactivar" : "Activar"}
+                      </button>
+                      <button
+                        className="app-button app-button--danger"
+                        onClick={() => handleDelete(r.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

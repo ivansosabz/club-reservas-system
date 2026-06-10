@@ -75,11 +75,12 @@ function ReservationsPage() {
 
   const { data: recursos } = useAsync(getRecursos, [], []);
 
-  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [deleteError, setDeleteError] = useState("");
   const [successMessage, setSuccessMessage] = useState(
     (location.state as { successMessage?: string } | null)?.successMessage ?? ""
   );
 
+  const [viewingDetail, setViewingDetail] = useState<Reserva | null>(null);
   const [editing, setEditing] = useState<Reserva | null>(null);
   const [editResource, setEditResource] = useState("");
   const [editStartDatetime, setEditStartDatetime] = useState("");
@@ -88,6 +89,16 @@ function ReservationsPage() {
   const [editNotes, setEditNotes] = useState("");
   const [editError, setEditError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+
+  function canEdit(reservation: Reserva): boolean {
+    if (!user) return false;
+    if (user.is_staff) return true;
+    return reservation.user === user.id && reservation.status === "pending";
+  }
+
+  function canDelete(): boolean {
+    return user?.is_staff ?? false;
+  }
 
   const reservations = paginated?.results ?? [];
   const totalCount = paginated?.count ?? 0;
@@ -114,6 +125,7 @@ function ReservationsPage() {
   }
 
   function setFilter(key: string, value: string) {
+    setDeleteError("");
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (value) {
@@ -152,6 +164,14 @@ function ReservationsPage() {
 
   const showStatusFilter = tab === "todas";
   const showDateFilters = tab === "todas";
+
+  function openDetail(reservation: Reserva) {
+    setViewingDetail(reservation);
+  }
+
+  function closeDetail() {
+    setViewingDetail(null);
+  }
 
   function openEdit(reservation: Reserva) {
     setEditing(reservation);
@@ -205,7 +225,6 @@ function ReservationsPage() {
   }
 
   const handleDelete = useCallback(async (id: number) => {
-    setDeletingIds((prev) => new Set(prev).add(id));
     try {
       await eliminarReserva(id);
       setData((prev) => {
@@ -217,13 +236,9 @@ function ReservationsPage() {
         };
       });
     } catch (deleteError) {
-      console.error(deleteError);
-    } finally {
-      setDeletingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
+      setDeleteError(
+        deleteError instanceof Error ? deleteError.message : "Error al eliminar."
+      );
     }
   }, [setData]);
 
@@ -305,6 +320,10 @@ function ReservationsPage() {
         <p className="status-text status-text--success">{successMessage}</p>
       ) : null}
 
+      {deleteError ? (
+        <p className="status-text status-text--error">{deleteError}</p>
+      ) : null}
+
       {!loading && error ? (
         <p className="status-text status-text--error">{error}</p>
       ) : null}
@@ -316,9 +335,7 @@ function ReservationsPage() {
               <ReservationItem
                 key={reservation.id}
                 reservation={reservation}
-                onEdit={user?.is_staff || (reservation.user === user?.id && reservation.status === "pending") ? openEdit : undefined}
-                onDelete={handleDelete}
-                isDeleting={deletingIds.has(reservation.id)}
+                onClick={openDetail}
               />
             ))}
           </ul>
@@ -380,6 +397,83 @@ function ReservationsPage() {
           )}
         </div>
       ) : null}
+
+      <Modal
+        open={viewingDetail !== null}
+        title="Detalle de reserva"
+        onClose={closeDetail}
+      >
+        {viewingDetail ? (
+          <div className="detail-modal">
+            <div className="detail-modal__row">
+              <span>Recurso</span>
+              <strong>{viewingDetail.resource_name || "Sin asignar"}</strong>
+            </div>
+            <div className="detail-modal__row">
+              <span>Inicio</span>
+              <strong>{viewingDetail.start_datetime.slice(0, 16)}</strong>
+            </div>
+            <div className="detail-modal__row">
+              <span>Fin</span>
+              <strong>{viewingDetail.end_datetime.slice(0, 16)}</strong>
+            </div>
+            <div className="detail-modal__row">
+              <span>Estado</span>
+              <strong>{viewingDetail.status || "Pendiente"}</strong>
+            </div>
+            {viewingDetail.notes ? (
+              <div className="detail-modal__row">
+                <span>Notas</span>
+                <strong>{viewingDetail.notes}</strong>
+              </div>
+            ) : null}
+            <div className="detail-modal__divider" />
+            <div className="detail-modal__row">
+              <span>Usuario</span>
+              <strong>{viewingDetail.user_username}</strong>
+            </div>
+            {viewingDetail.user_email ? (
+              <div className="detail-modal__row">
+                <span>Email</span>
+                <strong>{viewingDetail.user_email}</strong>
+              </div>
+            ) : null}
+            {viewingDetail.user_phone ? (
+              <div className="detail-modal__row">
+                <span>Telefono</span>
+                <strong>{viewingDetail.user_phone}</strong>
+              </div>
+            ) : null}
+            <div className="detail-modal__actions">
+              {canEdit(viewingDetail) ? (
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => {
+                    const r = viewingDetail;
+                    closeDetail();
+                    openEdit(r);
+                  }}
+                >
+                  Editar
+                </button>
+              ) : null}
+              {canDelete() ? (
+                <button
+                  type="button"
+                  className="app-button app-button--danger"
+                  onClick={() => {
+                    closeDetail();
+                    handleDelete(viewingDetail.id);
+                  }}
+                >
+                  Eliminar
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </Modal>
 
       <Modal
         open={editing !== null}

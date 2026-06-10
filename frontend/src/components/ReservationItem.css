@@ -7,7 +7,7 @@
 
 .reservation-card {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 18px;
   align-items: center;
   padding: 20px;
@@ -24,8 +24,12 @@
     box-shadow 0.2s ease;
 }
 
-.reservation-card:hover {
-  border-color: rgba(34, 197, 94, 0.42);
+.reservation-card--clickable {
+  cursor: pointer;
+}
+
+.reservation-card--clickable:hover {
+  border-color: rgba(34, 197, 94, 0.6);
   transform: translateY(-2px);
 }
 
@@ -57,12 +61,6 @@
   font-weight: 800;
 }
 
-.reservation-card__actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
 .reservation-card__contact {
   display: flex;
   flex-wrap: wrap;
@@ -88,9 +86,5 @@
 @media (max-width: 620px) {
   .reservation-card {
     grid-template-columns: 1fr;
-  }
-
-  .reservation-card__actions {
-    justify-content: flex-start;
   }
 }
