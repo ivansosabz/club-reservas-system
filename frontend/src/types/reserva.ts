@@ -30,3 +30,21 @@ export interface ActualizarReservaPayload {
   status?: string;
   notes?: string;
 }
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface ReservaFilters {
+  page?: number;
+  page_size?: number;
+  date_from?: string;
+  date_to?: string;
+  status?: string;
+  resource?: number;
+  search?: string;
+  ordering?: string;
+}

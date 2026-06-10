@@ -4,7 +4,7 @@ interface UseAsyncResult<T> {
   data: T | null;
   loading: boolean;
   error: string;
-  setData: (data: T) => void;
+  setData: React.Dispatch<React.SetStateAction<T | null>>;
   refresh: () => void;
 }
 

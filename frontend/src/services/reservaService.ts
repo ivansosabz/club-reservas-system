@@ -1,12 +1,17 @@
-import { apiFetch } from "./api";
+import { apiFetch, buildQueryString } from "./api";
 import type {
   ActualizarReservaPayload,
   CrearReservaPayload,
+  PaginatedResponse,
   Reserva,
+  ReservaFilters,
 } from "../types/reserva";
 
-export async function getReservas(): Promise<Reserva[]> {
-  return apiFetch<Reserva[]>("/reservations/");
+export async function getReservas(
+  filters?: ReservaFilters
+): Promise<PaginatedResponse<Reserva>> {
+  const query = filters ? buildQueryString(filters as Record<string, string | number | undefined>) : "";
+  return apiFetch<PaginatedResponse<Reserva>>(`/reservations/${query}`);
 }
 
 export async function crearReserva(

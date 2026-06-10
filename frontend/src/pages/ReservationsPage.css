@@ -1,0 +1,44 @@
+.reservations-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.reservations-filters .form-input {
+  min-width: 0;
+  width: auto;
+  flex: 1 1 180px;
+}
+
+.reservations-filters .form-input[type="date"] {
+  flex: 0 1 160px;
+}
+
+.reservations-filters select.form-input {
+  flex: 0 1 150px;
+}
+
+.filter-search {
+  flex: 2 1 240px;
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem 0;
+}
+
+.pagination-bar .app-button {
+  min-width: 100px;
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: #5a6170;
+  white-space: nowrap;
+}

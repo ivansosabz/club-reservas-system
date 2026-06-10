@@ -180,9 +180,13 @@ class ReservationAPITest(APITestCase):
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_list_reservations_returns_empty_list(self):
+    def test_list_reservations_returns_paginated(self):
         response = self.client.get(self.list_url)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("results", response.data)
+        self.assertIn("count", response.data)
+        self.assertEqual(response.data["results"], [])
+        self.assertEqual(response.data["count"], 0)
 
     def test_create_reservation_returns_201(self):
         response = self.client.post(
@@ -290,7 +294,8 @@ class ReservationAPITest(APITestCase):
             format="json",
         )
         response = self.client.get(self.list_url)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data["results"]), 2)
+        self.assertEqual(response.data["count"], 2)
 
     def test_delete_reservation_returns_204(self):
         create_resp = self.client.post(
@@ -364,6 +369,139 @@ class ReservationAPITest(APITestCase):
         pk = create_resp.data["id"]
         response = self.client.get(self._detail_url(pk))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_filter_by_date_from(self):
+        self.client.post(
+            self.list_url, self._valid_payload(date="2026-07-01"), format="json"
+        )
+        self.client.post(
+            self.list_url, self._valid_payload(date="2026-07-05"), format="json"
+        )
+        response = self.client.get(
+            self.list_url, {"date_from": "2026-07-03"}
+        )
+        self.assertEqual(response.data["count"], 1)
+
+    def test_filter_by_date_range(self):
+        self.client.post(
+            self.list_url, self._valid_payload(date="2026-07-01"), format="json"
+        )
+        self.client.post(
+            self.list_url, self._valid_payload(date="2026-07-10"), format="json"
+        )
+        response = self.client.get(
+            self.list_url, {"date_from": "2026-07-01", "date_to": "2026-07-05"}
+        )
+        self.assertEqual(response.data["count"], 1)
+
+    def test_filter_by_status(self):
+        self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        self.client.post(
+            self.list_url,
+            self._valid_payload(start_time="11:00", end_time="12:00"),
+            format="json",
+        )
+        r1 = Reservation.objects.first()
+        r1.status = "confirmed"
+        r1.save()
+        response = self.client.get(
+            self.list_url, {"status": "confirmed"}
+        )
+        self.assertEqual(response.data["count"], 1)
+
+    def test_filter_by_resource(self):
+        self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        self.client.post(
+            self.list_url,
+            self._valid_payload(resource=self.other_resource.pk),
+            format="json",
+        )
+        response = self.client.get(
+            self.list_url, {"resource": self.other_resource.pk}
+        )
+        self.assertEqual(response.data["count"], 1)
+
+    def test_filter_by_search(self):
+        self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        response = self.client.get(
+            self.list_url, {"search": "Salon A"}
+        )
+        self.assertEqual(response.data["count"], 1)
+        response = self.client.get(
+            self.list_url, {"search": "apiuser"}
+        )
+        self.assertEqual(response.data["count"], 1)
+
+    def test_pagination_default_page_size(self):
+        for i in range(25):
+            self.client.post(
+                self.list_url,
+                self._valid_payload(
+                    date="2026-07-01",
+                    start_time=f"{9 + i // 60:02d}:{i % 60:02d}",
+                    end_time=f"{9 + i // 60:02d}:{(i % 60) + 1:02d}",
+                ),
+                format="json",
+            )
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.data["count"], 25)
+        self.assertEqual(len(response.data["results"]), 20)
+        self.assertIsNotNone(response.data["next"])
+
+    def test_pagination_custom_page_size(self):
+        for i in range(10):
+            self.client.post(
+                self.list_url,
+                self._valid_payload(
+                    date="2026-07-01",
+                    start_time=f"{9 + i // 60:02d}:{i % 60:02d}",
+                    end_time=f"{9 + i // 60:02d}:{(i % 60) + 1:02d}",
+                ),
+                format="json",
+            )
+        response = self.client.get(
+            self.list_url, {"page_size": "5"}
+        )
+        self.assertEqual(len(response.data["results"]), 5)
+        self.assertEqual(response.data["count"], 10)
+        self.assertIsNotNone(response.data["next"])
+
+    def test_pagination_second_page(self):
+        for i in range(25):
+            self.client.post(
+                self.list_url,
+                self._valid_payload(
+                    date="2026-07-01",
+                    start_time=f"{9 + i // 60:02d}:{i % 60:02d}",
+                    end_time=f"{9 + i // 60:02d}:{(i % 60) + 1:02d}",
+                ),
+                format="json",
+            )
+        response = self.client.get(
+            self.list_url, {"page": "2", "page_size": "10"}
+        )
+        self.assertEqual(len(response.data["results"]), 10)
+        self.assertIsNotNone(response.data["previous"])
+
+    def test_ordering_desc(self):
+        self.client.post(
+            self.list_url, self._valid_payload(date="2026-07-01"), format="json"
+        )
+        self.client.post(
+            self.list_url, self._valid_payload(date="2026-07-10"), format="json"
+        )
+        response = self.client.get(
+            self.list_url, {"ordering": "-date"}
+        )
+        results = response.data["results"]
+        self.assertEqual(results[0]["date"], "2026-07-10")
+        self.assertEqual(results[1]["date"], "2026-07-01")
 
     def test_non_staff_delete_returns_204(self):
         create_resp = self.client.post(

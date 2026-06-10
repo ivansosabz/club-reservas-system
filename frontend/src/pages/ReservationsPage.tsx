@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import ReservationItem from "../components/ReservationItem";
 import { useAsync } from "../hooks/useAsync";
@@ -10,20 +10,47 @@ import {
   eliminarReserva,
   getReservas,
 } from "../services/reservaService";
-import type { ActualizarReservaPayload, Reserva } from "../types/reserva";
+import type { ActualizarReservaPayload, Reserva, ReservaFilters } from "../types/reserva";
 import Modal from "../components/Modal";
+import "./ReservationsPage.css";
 
 function ReservationsPage() {
   const location = useLocation();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = Number(searchParams.get("page") || "1");
+  const pageSize = Number(searchParams.get("page_size") || "20");
+  const dateFrom = searchParams.get("date_from") || "";
+  const dateTo = searchParams.get("date_to") || "";
+  const statusFilter = searchParams.get("status") || "";
+  const resourceFilter = searchParams.get("resource") || "";
+  const searchTerm = searchParams.get("search") || "";
+  const ordering = searchParams.get("ordering") || "";
+
+  const filters: ReservaFilters = {
+    page,
+    page_size: pageSize,
+    ...(dateFrom ? { date_from: dateFrom } : {}),
+    ...(dateTo ? { date_to: dateTo } : {}),
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(resourceFilter ? { resource: Number(resourceFilter) } : {}),
+    ...(searchTerm ? { search: searchTerm } : {}),
+    ...(ordering ? { ordering } : {}),
+  };
+
+  const fetchKey = JSON.stringify(filters);
+
   const {
-    data: reservations,
+    data: paginated,
     loading,
     error,
-    setData: setReservations,
+    setData,
     refresh,
-  } = useAsync(getReservas, []);
+  } = useAsync(() => getReservas(filters), [fetchKey]);
+
   const { data: recursos } = useAsync(getRecursos, [], []);
+
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [successMessage, setSuccessMessage] = useState(
     (location.state as { successMessage?: string } | null)?.successMessage ?? ""
@@ -39,12 +66,42 @@ function ReservationsPage() {
   const [editError, setEditError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
+  const reservations = paginated?.results ?? [];
+  const totalCount = paginated?.count ?? 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
   useEffect(() => {
     if (successMessage) {
       const timer = setTimeout(() => setSuccessMessage(""), 3000);
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  function setFilter(key: string, value: string) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) {
+        next.set(key, value);
+      } else {
+        next.delete(key);
+      }
+      if (key !== "page") {
+        next.delete("page");
+      }
+      return next;
+    });
+  }
+
+  function clearFilters() {
+    setSearchParams(new URLSearchParams());
+  }
+
+  function goToPage(p: number) {
+    if (p < 1 || p > totalPages) return;
+    setFilter("page", String(p));
+  }
+
+  const hasFilters = dateFrom || dateTo || statusFilter || resourceFilter || searchTerm;
 
   function openEdit(reservation: Reserva) {
     setEditing(reservation);
@@ -101,12 +158,16 @@ function ReservationsPage() {
 
   const handleDelete = useCallback(async (id: number) => {
     setDeletingIds((prev) => new Set(prev).add(id));
-
     try {
       await eliminarReserva(id);
-      setReservations(
-        (reservations ?? []).filter((r) => r.id !== id)
-      );
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          count: prev.count - 1,
+          results: prev.results.filter((r) => r.id !== id),
+        };
+      });
     } catch (deleteError) {
       console.error(deleteError);
     } finally {
@@ -116,7 +177,7 @@ function ReservationsPage() {
         return next;
       });
     }
-  }, [reservations, setReservations]);
+  }, [setData]);
 
   return (
     <section className="page page--wide">
@@ -128,6 +189,49 @@ function ReservationsPage() {
         </p>
       </header>
 
+      <div className="reservations-filters">
+        <input
+          className="form-input filter-search"
+          type="search"
+          placeholder="Buscar por recurso o usuario..."
+          value={searchTerm}
+          onChange={(e) => setFilter("search", e.target.value)}
+        />
+        <input
+          className="form-input"
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setFilter("date_from", e.target.value)}
+          title="Fecha desde"
+        />
+        <input
+          className="form-input"
+          type="date"
+          value={dateTo}
+          onChange={(e) => setFilter("date_to", e.target.value)}
+          title="Fecha hasta"
+        />
+        <select
+          className="form-input"
+          value={statusFilter}
+          onChange={(e) => setFilter("status", e.target.value)}
+        >
+          <option value="">Todos los estados</option>
+          <option value="pending">Pendiente</option>
+          <option value="confirmed">Confirmada</option>
+          <option value="cancelled">Cancelada</option>
+        </select>
+        {hasFilters ? (
+          <button
+            type="button"
+            className="app-button"
+            onClick={clearFilters}
+          >
+            Limpiar filtros
+          </button>
+        ) : null}
+      </div>
+
       {loading ? <LoadingSkeleton count={3} /> : null}
 
       {successMessage ? (
@@ -138,30 +242,75 @@ function ReservationsPage() {
         <p className="status-text status-text--error">{error}</p>
       ) : null}
 
-      {!loading && !error && reservations && reservations.length > 0 ? (
-        <ul className="reservations-list">
-          {reservations.map((reservation) => (
-            <ReservationItem
-              key={reservation.id}
-              reservation={reservation}
-              onEdit={user?.is_staff ? openEdit : undefined}
-              onDelete={handleDelete}
-              isDeleting={deletingIds.has(reservation.id)}
-            />
-          ))}
-        </ul>
+      {!loading && !error && reservations.length > 0 ? (
+        <>
+          <ul className="reservations-list">
+            {reservations.map((reservation) => (
+              <ReservationItem
+                key={reservation.id}
+                reservation={reservation}
+                onEdit={user?.is_staff ? openEdit : undefined}
+                onDelete={handleDelete}
+                isDeleting={deletingIds.has(reservation.id)}
+              />
+            ))}
+          </ul>
+
+          {totalPages > 1 ? (
+            <div className="pagination-bar">
+              <button
+                type="button"
+                className="app-button"
+                disabled={page <= 1}
+                onClick={() => goToPage(page - 1)}
+              >
+                Anterior
+              </button>
+              <span className="pagination-info">
+                Pagina {page} de {totalPages} ({totalCount} reservas)
+              </span>
+              <button
+                type="button"
+                className="app-button"
+                disabled={page >= totalPages}
+                onClick={() => goToPage(page + 1)}
+              >
+                Siguiente
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
-      {!loading && !error && reservations && reservations.length === 0 ? (
+      {!loading && !error && reservations.length === 0 ? (
         <div className="empty-state">
           <p className="empty-state-icon">[ ]</p>
-          <p className="empty-state-title">Todavia no hay reservas</p>
-          <p className="empty-state-description">
-            Crea tu primera reserva para empezar a gestionar los espacios del club.
+          <p className="empty-state-title">
+            {hasFilters ? "Sin resultados" : "Todavia no hay reservas"}
           </p>
-          <Link to="/new" className="primary-button" style={{ textDecoration: "none", display: "inline-flex" }}>
-            Nueva reserva
-          </Link>
+          <p className="empty-state-description">
+            {hasFilters
+              ? "No se encontraron reservas con los filtros aplicados."
+              : "Crea tu primera reserva para empezar a gestionar los espacios del club."
+            }
+          </p>
+          {hasFilters ? (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={clearFilters}
+            >
+              Limpiar filtros
+            </button>
+          ) : (
+            <Link
+              to="/new"
+              className="primary-button"
+              style={{ textDecoration: "none", display: "inline-flex" }}
+            >
+              Nueva reserva
+            </Link>
+          )}
         </div>
       ) : null}
 
@@ -181,7 +330,7 @@ function ReservationsPage() {
               value={editResource}
               onChange={(e) => setEditResource(e.target.value)}
             >
-              {recursos.map((r) => (
+              {recursos?.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
                   {r.resource_type_name ? ` (${r.resource_type_name})` : ""}
