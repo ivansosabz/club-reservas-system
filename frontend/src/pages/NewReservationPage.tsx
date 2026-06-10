@@ -60,7 +60,7 @@ function NewReservationPage() {
   }
 
   return (
-    <section className="new-reservation-page">
+    <section className="page new-reservation-page">
       <header className="page-header">
         <p className="page-kicker">Nuevo turno</p>
         <h1 className="page-title">Nueva reserva</h1>

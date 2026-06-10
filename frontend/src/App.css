@@ -20,12 +20,6 @@ body {
   color: var(--app-text);
 }
 
-#root {
-  width: 100%;
-  border-inline: none;
-  text-align: left;
-}
-
 .app-shell {
   min-height: 100vh;
   padding: 24px;
@@ -58,7 +52,6 @@ body {
   color: var(--app-heading);
   font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0;
 }
 
 .brand-mark::before {
@@ -123,7 +116,6 @@ body {
   margin: 0;
   color: var(--app-heading);
   font-size: clamp(30px, 5vw, 48px);
-  letter-spacing: 0;
   line-height: 1.05;
   font-weight: 800;
 }
@@ -178,7 +170,7 @@ body {
 }
 
 .app-button--danger {
-  min-height: 38px;
+  min-height: 44px;
   background: var(--app-danger-bg);
   border-color: rgba(239, 68, 68, 0.32);
   color: #fecaca;
@@ -270,7 +262,6 @@ body {
 .form-textarea {
   resize: vertical;
   min-height: 72px;
-  font-family: inherit;
 }
 
 .admin-toggle-label {
