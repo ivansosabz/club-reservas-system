@@ -2,6 +2,8 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AboutPage from "./pages/AboutPage";
+import AdminResourcesPage from "./pages/AdminResourcesPage";
+import AdminResourceTypesPage from "./pages/AdminResourceTypesPage";
 import LoginPage from "./pages/LoginPage";
 import NewReservationPage from "./pages/NewReservationPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -24,6 +26,19 @@ function NavBar() {
             <NavLink className="nav-link" to="/new">
               Nueva reserva
             </NavLink>
+            <div className="nav-dropdown">
+              <span className="nav-link nav-dropdown-trigger">
+                Admin ▾
+              </span>
+              <div className="nav-dropdown-menu">
+                <NavLink className="nav-dropdown-item" to="/recursos">
+                  Recursos
+                </NavLink>
+                <NavLink className="nav-dropdown-item" to="/tipos-de-recurso">
+                  Tipos de recurso
+                </NavLink>
+              </div>
+            </div>
             <NavLink className="nav-link" to="/about">
               Acerca de
             </NavLink>
@@ -72,6 +87,22 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <NewReservationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recursos"
+            element={
+              <ProtectedRoute>
+                <AdminResourcesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tipos-de-recurso"
+            element={
+              <ProtectedRoute>
+                <AdminResourceTypesPage />
               </ProtectedRoute>
             }
           />
