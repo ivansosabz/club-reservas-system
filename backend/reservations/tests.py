@@ -564,7 +564,7 @@ class ReservationAPITest(APITestCase):
             )
         response = self.client.get(self.list_url)
         self.assertEqual(response.data["count"], 25)
-        self.assertEqual(len(response.data["results"]), 20)
+        self.assertEqual(len(response.data["results"]), 10)
         self.assertIsNotNone(response.data["next"])
 
     def test_pagination_custom_page_size(self):

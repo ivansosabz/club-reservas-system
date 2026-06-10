@@ -11,6 +11,8 @@ import {
 import type { Recurso, CrearRecursoPayload } from "../types/recurso";
 import "./AdminResourceTypesPage.css";
 
+const PAGE_SIZE = 10;
+
 function AdminResourcesPage() {
   const {
     data: recursos,
@@ -18,7 +20,17 @@ function AdminResourcesPage() {
     error,
     refresh,
   } = useAsync(() => getRecursos(true), [], []);
+  const [page, setPage] = useState(1);
   const { data: tipos } = useAsync(getTiposRecurso, [], []);
+
+  const start = (page - 1) * PAGE_SIZE;
+  const visible = (recursos ?? []).slice(start, start + PAGE_SIZE);
+  const totalPages = Math.ceil((recursos ?? []).length / PAGE_SIZE);
+
+  function handleRefresh() {
+    setPage(1);
+    refresh();
+  }
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Recurso | null>(null);
@@ -86,7 +98,7 @@ function AdminResourcesPage() {
         });
       }
       closeModal();
-      refresh();
+      handleRefresh();
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Error al guardar."
@@ -100,7 +112,7 @@ function AdminResourcesPage() {
     if (!window.confirm("Eliminar este recurso?")) return;
     try {
       await eliminarRecurso(id);
-      refresh();
+      handleRefresh();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error al eliminar.");
     }
@@ -109,7 +121,7 @@ function AdminResourcesPage() {
   async function handleToggleActive(r: Recurso) {
     try {
       await actualizarRecurso(r.id, { is_active: !r.is_active });
-      refresh();
+      handleRefresh();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error al actualizar.");
     }
@@ -156,7 +168,7 @@ function AdminResourcesPage() {
               </tr>
             </thead>
             <tbody>
-              {recursos.map((r) => (
+              {visible.map((r) => (
                 <tr key={r.id}>
                   <td className="admin-cell-name">{r.name}</td>
                   <td>
@@ -204,6 +216,30 @@ function AdminResourcesPage() {
           </table>
         </div>
       )}
+
+      {totalPages > 1 ? (
+        <div className="pagination-bar">
+          <button
+            type="button"
+            className="app-button"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Anterior
+          </button>
+          <span className="pagination-info">
+            Pagina {page} de {totalPages} ({recursos.length} recursos)
+          </span>
+          <button
+            type="button"
+            className="app-button"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Siguiente
+          </button>
+        </div>
+      ) : null}
 
       <Modal
         open={modalOpen}

@@ -10,6 +10,8 @@ import {
 import type { TipoRecurso, CrearTipoRecursoPayload } from "../types/recurso";
 import "./AdminResourceTypesPage.css";
 
+const PAGE_SIZE = 10;
+
 function AdminResourceTypesPage() {
   const {
     data: tipos,
@@ -17,6 +19,16 @@ function AdminResourceTypesPage() {
     error,
     refresh,
   } = useAsync(getTiposRecurso, [], []);
+  const [page, setPage] = useState(1);
+
+  const start = (page - 1) * PAGE_SIZE;
+  const visible = (tipos ?? []).slice(start, start + PAGE_SIZE);
+  const totalPages = Math.ceil((tipos ?? []).length / PAGE_SIZE);
+
+  function handleRefresh() {
+    setPage(1);
+    refresh();
+  }
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<TipoRecurso | null>(null);
@@ -70,7 +82,7 @@ function AdminResourceTypesPage() {
         });
       }
       closeModal();
-      refresh();
+      handleRefresh();
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Error al guardar."
@@ -84,7 +96,7 @@ function AdminResourceTypesPage() {
     if (!window.confirm("Eliminar este tipo de recurso?")) return;
     try {
       await eliminarTipoRecurso(id);
-      refresh();
+      handleRefresh();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error al eliminar.");
     }
@@ -129,7 +141,7 @@ function AdminResourceTypesPage() {
               </tr>
             </thead>
             <tbody>
-              {tipos.map((tipo) => (
+              {visible.map((tipo) => (
                 <tr key={tipo.id}>
                   <td className="admin-cell-name">{tipo.name}</td>
                   <td className="admin-cell-desc">{tipo.description ?? "-"}</td>
@@ -153,6 +165,30 @@ function AdminResourceTypesPage() {
           </table>
         </div>
       )}
+
+      {totalPages > 1 ? (
+        <div className="pagination-bar">
+          <button
+            type="button"
+            className="app-button"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Anterior
+          </button>
+          <span className="pagination-info">
+            Pagina {page} de {totalPages} ({tipos.length} tipos)
+          </span>
+          <button
+            type="button"
+            className="app-button"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Siguiente
+          </button>
+        </div>
+      ) : null}
 
       <Modal
         open={modalOpen}

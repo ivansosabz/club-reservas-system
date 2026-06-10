@@ -55,6 +55,11 @@
   justify-content: flex-end;
 }
 
+.admin-cell-actions .app-button {
+  min-width: 88px;
+  text-align: center;
+}
+
 .admin-cell-name {
   font-weight: 700;
   color: var(--app-heading);
