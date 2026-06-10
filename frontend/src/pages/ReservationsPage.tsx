@@ -93,7 +93,7 @@ function ReservationsPage() {
   function canEdit(reservation: Reserva): boolean {
     if (!user) return false;
     if (user.is_staff) return true;
-    return reservation.user === user.id && reservation.status === "pending";
+    return Number(reservation.user) === Number(user.id) && reservation.status === "pending";
   }
 
   function canDelete(): boolean {
