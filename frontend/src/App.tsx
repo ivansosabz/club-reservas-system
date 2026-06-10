@@ -28,11 +28,11 @@ function NavBar() {
             </NavLink>
             <div className="nav-dropdown">
               <span className="nav-link nav-dropdown-trigger">
-                Admin ▾
+                Recursos
               </span>
               <div className="nav-dropdown-menu">
                 <NavLink className="nav-dropdown-item" to="/recursos">
-                  Recursos
+                  Gestionar recursos
                 </NavLink>
                 <NavLink className="nav-dropdown-item" to="/tipos-de-recurso">
                   Tipos de recurso
