@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { getRecursos } from "../services/recursoService";
 import { crearReserva } from "../services/reservaService";
 import type { Recurso } from "../types/recurso";
 import type { CrearReservaPayload } from "../types/reserva";
 import "./NewReservationPage.css";
 
-const DEFAULT_USER_ID = 1;
-
 function NewReservationPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [resource, setResource] = useState("");
   const [resources, setResources] = useState<Recurso[]>([]);
   const [date, setDate] = useState("");
@@ -75,7 +75,7 @@ function NewReservationPage() {
 
     try {
       await crearReserva({
-        user: DEFAULT_USER_ID,
+        user: user!.id,
         resource: Number(resource),
         date,
         start_time: startTime,

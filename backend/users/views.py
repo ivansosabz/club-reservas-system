@@ -1,23 +1,62 @@
-"""
-Views de la app `users`.
-
-Por ahora solo un listado de usuarios, útil durante desarrollo para ver
-qué usuarios existen (y sacar el id que manda el front como `user`
-al crear una reserva — hasta que armemos auth en la Etapa 5).
-"""
-
-from django.contrib.auth.models import User
-from rest_framework.decorators import api_view
+from django.contrib.auth import authenticate
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import UserSerializer
+from .serializers import RegisterSerializer, UserSerializer
 
 
-@api_view(["GET"])
-def user_list(request):
-    """
-    GET /api/users/   -> lista de usuarios registrados.
-    """
-    users = User.objects.all().order_by("username")
-    serializer = UserSerializer(users, many=True)
-    return Response(serializer.data)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def login_view(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+
+    if not username or not password:
+        return Response(
+            {"detail": "Usuario y contrasena son requeridos."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user = authenticate(username=username, password=password)
+
+    if user is None:
+        return Response(
+            {"detail": "Credenciales invalidas."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    refresh = RefreshToken.for_user(user)
+    refresh["username"] = user.username
+    serializer = UserSerializer(user)
+
+    return Response(
+        {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": serializer.data,
+        }
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def register_view(request):
+    serializer = RegisterSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+
+    refresh = RefreshToken.for_user(user)
+    refresh["username"] = user.username
+    user_serializer = UserSerializer(user)
+
+    return Response(
+        {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": user_serializer.data,
+        },
+        status=status.HTTP_201_CREATED,
+    )

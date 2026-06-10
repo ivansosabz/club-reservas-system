@@ -1,14 +1,7 @@
-"""
-URLs de la app `users`.
-
-Ruta final (con el prefijo /api/):
-    /api/users/
-"""
-
 from django.urls import path
-
-from .views import user_list
+from .views import login_view, register_view
 
 urlpatterns = [
-    path("users/", user_list, name="user-list"),
+    path("login/", login_view, name="auth-login"),
+    path("register/", register_view, name="auth-register"),
 ]

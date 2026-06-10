@@ -151,6 +151,9 @@ class ReservationAPITest(APITestCase):
         )
         cls.list_url = "/api/reservations/"
 
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
     def _detail_url(self, pk):
         return f"/api/reservations/{pk}/"
 

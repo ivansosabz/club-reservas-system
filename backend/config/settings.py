@@ -69,12 +69,14 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # ------------------------------------------------------------------
-# DRF — configuración mínima para la Etapa 3
-# Todavía sin autenticación (Etapa 5 se encarga).
+# DRF — JWT auth + permisos
 # ------------------------------------------------------------------
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
 }
 

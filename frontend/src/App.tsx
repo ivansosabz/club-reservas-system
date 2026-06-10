@@ -1,17 +1,23 @@
 import { NavLink, Route, Routes } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AboutPage from "./pages/AboutPage";
+import LoginPage from "./pages/LoginPage";
 import NewReservationPage from "./pages/NewReservationPage";
+import RegisterPage from "./pages/RegisterPage";
 import ReservationsPage from "./pages/ReservationsPage";
 import "./App.css";
 
-function App() {
-  return (
-    <div className="app-shell">
-      <div className="app-layout">
-        <nav className="main-nav">
-          <div className="brand-mark">Club Reservas</div>
+function NavBar() {
+  const { user, isAuthenticated, logout } = useAuth();
 
-          <div className="nav-links">
+  return (
+    <nav className="main-nav">
+      <div className="brand-mark">Club Reservas</div>
+
+      <div className="nav-links">
+        {isAuthenticated ? (
+          <>
             <NavLink className="nav-link" to="/">
               Reservas
             </NavLink>
@@ -21,16 +27,68 @@ function App() {
             <NavLink className="nav-link" to="/about">
               Acerca de
             </NavLink>
-          </div>
-        </nav>
+            <span className="nav-link" style={{ opacity: 0.6 }}>
+              {user?.username}
+            </span>
+            <button className="nav-link" onClick={logout} style={{ cursor: "pointer", border: "none", background: "none" }}>
+              Salir
+            </button>
+          </>
+        ) : (
+          <>
+            <NavLink className="nav-link" to="/login">
+              Ingresar
+            </NavLink>
+            <NavLink className="nav-link" to="/register">
+              Registrarse
+            </NavLink>
+            <NavLink className="nav-link" to="/about">
+              Acerca de
+            </NavLink>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+function AppContent() {
+  return (
+    <div className="app-shell">
+      <div className="app-layout">
+        <NavBar />
 
         <Routes>
-          <Route path="/" element={<ReservationsPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <ReservationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/new"
+            element={
+              <ProtectedRoute>
+                <NewReservationPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/new" element={<NewReservationPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Routes>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
