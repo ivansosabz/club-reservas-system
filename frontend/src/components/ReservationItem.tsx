@@ -7,11 +7,12 @@ function formatTime(value: string) {
 
 interface ReservationItemProps {
   reservation: Reserva;
+  onEdit?: (reservation: Reserva) => void;
   onDelete?: (id: number) => void;
   isDeleting?: boolean;
 }
 
-function ReservationItem({ reservation, onDelete, isDeleting = false }: ReservationItemProps) {
+function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: ReservationItemProps) {
   const { resource_name, date, start_time, end_time, status } = reservation;
 
   return (
@@ -34,8 +35,17 @@ function ReservationItem({ reservation, onDelete, isDeleting = false }: Reservat
         </div>
       </div>
 
-      {onDelete ? (
-        <div className="reservation-card__actions">
+      <div className="reservation-card__actions">
+        {onEdit ? (
+          <button
+            className="app-button"
+            type="button"
+            onClick={() => onEdit(reservation)}
+          >
+            Editar
+          </button>
+        ) : null}
+        {onDelete ? (
           <button
             className="app-button app-button--danger"
             type="button"
@@ -44,8 +54,8 @@ function ReservationItem({ reservation, onDelete, isDeleting = false }: Reservat
           >
             {isDeleting ? "Eliminando..." : "Eliminar"}
           </button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </li>
   );
 }

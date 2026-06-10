@@ -8,6 +8,7 @@ interface User {
   id: number;
   username: string;
   email?: string;
+  is_staff?: boolean;
 }
 
 interface AuthContextValue {
@@ -26,6 +27,7 @@ function decodeToken(token: string): User | null {
     return {
       id: payload.user_id,
       username: payload.username,
+      is_staff: payload.is_staff ?? false,
     };
   } catch {
     return null;

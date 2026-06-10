@@ -21,3 +21,12 @@ export interface CrearReservaPayload {
   end_time: string;
   notes?: string;
 }
+
+export interface ActualizarReservaPayload {
+  resource?: number;
+  date?: string;
+  start_time?: string;
+  end_time?: string;
+  status?: string;
+  notes?: string;
+}

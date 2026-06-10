@@ -143,9 +143,17 @@ class ReservationAPITest(APITestCase):
         cls.user = User.objects.create_user(
             username="apiuser", password="apipass123"
         )
+        cls.staff_user = User.objects.create_user(
+            username="staff", password="staffpass123", is_staff=True
+        )
         cls.resource_type = ResourceType.objects.create(name="Salon")
         cls.resource = Resource.objects.create(
             name="Salon A",
+            resource_type=cls.resource_type,
+            is_active=True,
+        )
+        cls.other_resource = Resource.objects.create(
+            name="Salon B",
             resource_type=cls.resource_type,
             is_active=True,
         )
@@ -238,6 +246,7 @@ class ReservationAPITest(APITestCase):
             self.list_url, self._valid_payload(), format="json"
         )
         pk = create_resp.data["id"]
+        self.client.force_authenticate(user=self.staff_user)
         response = self.client.patch(
             self._detail_url(pk),
             {"status": "confirmed"},
@@ -261,6 +270,7 @@ class ReservationAPITest(APITestCase):
             ),
             format="json",
         )
+        self.client.force_authenticate(user=self.staff_user)
         response = self.client.patch(
             self._detail_url(r2.data["id"]),
             {"start_time": "09:30", "end_time": "10:30"},
@@ -306,3 +316,59 @@ class ReservationAPITest(APITestCase):
     def test_delete_method_not_allowed_on_list(self):
         response = self.client.delete(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_non_staff_patch_returns_403(self):
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        response = self.client.patch(
+            self._detail_url(pk),
+            {"status": "confirmed"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_can_patch(self):
+        self.client.force_authenticate(user=self.staff_user)
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        response = self.client.patch(
+            self._detail_url(pk),
+            {"status": "confirmed"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "confirmed")
+
+    def test_staff_can_change_resource(self):
+        self.client.force_authenticate(user=self.staff_user)
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        response = self.client.patch(
+            self._detail_url(pk),
+            {"resource": self.other_resource.pk},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["resource"], self.other_resource.pk)
+
+    def test_non_staff_get_returns_200(self):
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        response = self.client.get(self._detail_url(pk))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_non_staff_delete_returns_204(self):
+        create_resp = self.client.post(
+            self.list_url, self._valid_payload(), format="json"
+        )
+        pk = create_resp.data["id"]
+        response = self.client.delete(self._detail_url(pk))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

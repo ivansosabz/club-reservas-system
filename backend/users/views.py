@@ -30,6 +30,7 @@ def login_view(request):
 
     refresh = RefreshToken.for_user(user)
     refresh["username"] = user.username
+    refresh["is_staff"] = user.is_staff
     serializer = UserSerializer(user)
 
     return Response(
@@ -50,6 +51,7 @@ def register_view(request):
 
     refresh = RefreshToken.for_user(user)
     refresh["username"] = user.username
+    refresh["is_staff"] = user.is_staff
     user_serializer = UserSerializer(user)
 
     return Response(

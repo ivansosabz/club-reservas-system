@@ -108,7 +108,18 @@ def resource_detail(request, pk):
         )
 
     if request.method == "DELETE":
-        resource.delete()
+        try:
+            resource.delete()
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "No se puede eliminar este recurso porque tiene "
+                        "reservas asociadas."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     serializer = ResourceSerializer(

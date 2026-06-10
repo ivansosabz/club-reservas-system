@@ -1,7 +1,10 @@
+from datetime import date, time
+
 from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from reservations.models import Reservation
 from .models import Resource, ResourceType
 
 
@@ -216,6 +219,21 @@ class ResourceAPITest(APITestCase):
         response = self.client.delete(f"/api/resources/{resource.pk}/")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Resource.objects.count(), 3)
+
+    def test_delete_resource_with_reservations_returns_400(self):
+        resource = Resource.objects.filter(is_active=True).first()
+        Reservation.objects.create(
+            user=self.user,
+            resource=resource,
+            date=date(2030, 6, 1),
+            start_time=time(10, 0),
+            end_time=time(11, 0),
+        )
+        response = self.client.delete(
+            f"/api/resources/{resource.pk}/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("reservas asociadas", response.data["detail"])
 
     def test_unauthenticated_detail_returns_200(self):
         self.client.force_authenticate(user=None)

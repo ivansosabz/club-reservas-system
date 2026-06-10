@@ -60,6 +60,12 @@ def reservation_detail_update(request, pk):
         reservation.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    if not request.user.is_staff:
+        return Response(
+            {"detail": "Solo el administrador puede editar reservas."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     serializer = ReservationUpdateSerializer(
         reservation,
         data=request.data,

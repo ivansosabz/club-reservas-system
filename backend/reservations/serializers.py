@@ -48,6 +48,7 @@ class ReservationUpdateSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "user_username",
+            "resource",
             "resource_name",
             "date",
             "start_time",

@@ -1,5 +1,9 @@
 import { apiFetch } from "./api";
-import type { Reserva, CrearReservaPayload } from "../types/reserva";
+import type {
+  ActualizarReservaPayload,
+  CrearReservaPayload,
+  Reserva,
+} from "../types/reserva";
 
 export async function getReservas(): Promise<Reserva[]> {
   return apiFetch<Reserva[]>("/reservations/");
@@ -10,6 +14,16 @@ export async function crearReserva(
 ): Promise<Reserva> {
   return apiFetch<Reserva>("/reservations/", {
     method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function actualizarReserva(
+  id: number,
+  payload: ActualizarReservaPayload
+): Promise<Reserva> {
+  return apiFetch<Reserva>(`/reservations/${id}/`, {
+    method: "PATCH",
     body: JSON.stringify(payload),
   });
 }
