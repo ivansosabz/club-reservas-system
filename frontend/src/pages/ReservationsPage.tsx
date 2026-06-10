@@ -297,7 +297,7 @@ function ReservationsPage() {
             value={statusFilter}
             onChange={(e) => setFilter("status", e.target.value)}
           >
-            <option value="">Todos los estados</option>
+            <option value="">Todos</option>
             <option value="pending">Pendiente</option>
             <option value="confirmed">Confirmada</option>
             <option value="cancelled">Cancelada</option>

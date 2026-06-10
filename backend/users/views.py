@@ -1,11 +1,11 @@
 from django.contrib.auth import authenticate
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import ProfileSerializer, RegisterSerializer, UserSerializer
 
 
 @api_view(["POST"])
@@ -62,3 +62,16 @@ def register_view(request):
         },
         status=status.HTTP_201_CREATED,
     )
+
+
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
+def profile_view(request):
+    if request.method == "GET":
+        serializer = ProfileSerializer(request.user)
+        return Response(serializer.data)
+
+    serializer = ProfileSerializer(request.user, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)

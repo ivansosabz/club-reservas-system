@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AboutPage from "./pages/AboutPage";
+import ProfileModal from "./components/ProfileModal";
 import AdminResourcesPage from "./pages/AdminResourcesPage";
 import AdminResourceTypesPage from "./pages/AdminResourceTypesPage";
 import LoginPage from "./pages/LoginPage";
@@ -12,6 +14,7 @@ import "./App.css";
 
 function NavBar() {
   const { user, isAuthenticated, logout } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   return (
     <nav className="main-nav">
@@ -37,7 +40,13 @@ function NavBar() {
             <NavLink className="nav-link" to="/about">
               Acerca de
             </NavLink>
-            <span className="nav-link" style={{ opacity: 0.6 }}>
+            <span
+              className="nav-link nav-dropdown-trigger"
+              onClick={() => setProfileOpen(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && setProfileOpen(true)}
+            >
               {user?.username}
             </span>
             <button className="nav-link" onClick={logout} style={{ cursor: "pointer", border: "none", background: "none" }}>
@@ -58,6 +67,8 @@ function NavBar() {
           </>
         )}
       </div>
+
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </nav>
   );
 }

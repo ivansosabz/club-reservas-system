@@ -192,6 +192,16 @@ body {
   color: #fecaca;
 }
 
+.profile-value {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: rgba(8, 13, 18, 0.46);
+  color: var(--app-heading);
+  font-size: 14px;
+}
+
 .status-text--success {
   color: #86efac;
   font-weight: 500;

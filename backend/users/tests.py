@@ -10,9 +10,9 @@ class UserProfileModelTest(TestCase):
         user = User.objects.create_user(
             username="testuser", password="pass123"
         )
-        profile = UserProfile.objects.create(
-            user=user, phone="123456789"
-        )
+        profile = user.profile
+        profile.phone = "123456789"
+        profile.save()
         self.assertEqual(profile.user.username, "testuser")
         self.assertEqual(profile.phone, "123456789")
         self.assertEqual(str(profile), "Perfil de testuser")
@@ -21,18 +21,17 @@ class UserProfileModelTest(TestCase):
         user = User.objects.create_user(
             username="nophone", password="pass123"
         )
-        profile = UserProfile.objects.create(user=user)
+        profile = user.profile
         self.assertIsNone(profile.phone)
 
     def test_one_to_one_relation(self):
         user1 = User.objects.create_user(
             username="user1", password="pass123"
         )
-        UserProfile.objects.create(user=user1)
         user2 = User.objects.create_user(
             username="user2", password="pass123"
         )
-        profile2 = UserProfile.objects.create(user=user2)
+        profile2 = user2.profile
         self.assertEqual(profile2.user.username, "user2")
 
 

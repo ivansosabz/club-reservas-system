@@ -15,6 +15,26 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
   });
 }
 
+export interface ProfileData {
+  id: number;
+  username: string;
+  email: string;
+  phone: string | null;
+}
+
+export async function getProfile(): Promise<ProfileData> {
+  return apiFetch<ProfileData>("/auth/profile/", {
+    method: "GET",
+  });
+}
+
+export async function updateProfile(data: Partial<Pick<ProfileData, "email" | "phone">>): Promise<ProfileData> {
+  return apiFetch<ProfileData>("/auth/profile/", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
 export function saveToken(token: string) {
   localStorage.setItem("token", token);
 }

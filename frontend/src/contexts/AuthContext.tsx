@@ -1,13 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import * as authService from "../services/authService";
 
 interface User {
   id: number;
   username: string;
-  email?: string;
+  email: string;
+  phone: string | null;
   is_staff?: boolean;
 }
 
@@ -17,6 +18,7 @@ interface AuthContextValue {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateProfile: (data: Partial<Pick<User, "email" | "phone">>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -27,6 +29,8 @@ function decodeToken(token: string): User | null {
     return {
       id: payload.user_id,
       username: payload.username,
+      email: payload.email ?? "",
+      phone: payload.phone ?? null,
       is_staff: payload.is_staff ?? false,
     };
   } catch {
@@ -40,6 +44,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return token ? decodeToken(token) : null;
   });
 
+  function syncProfile() {
+    authService.getProfile().then((profile) => {
+      setUser((prev) =>
+        prev
+          ? { ...prev, email: profile.email, phone: profile.phone }
+          : prev
+      );
+    }).catch(() => {});
+  }
+
   const login = useCallback(async (username: string, password: string) => {
     const response = await authService.login({ username, password });
 
@@ -50,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authService.saveToken(response.access);
     const decoded = decodeToken(response.access);
     setUser(decoded);
+    syncProfile();
   }, []);
 
   const register = useCallback(
@@ -68,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authService.saveToken(response.access);
       const decoded = decodeToken(response.access);
       setUser(decoded);
+      syncProfile();
     },
     []
   );
@@ -75,6 +91,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     authService.removeToken();
     setUser(null);
+  }, []);
+
+  const updateProfileFn = useCallback(
+    async (data: Partial<Pick<User, "email" | "phone">>) => {
+      const updated = await authService.updateProfile(data);
+      setUser((prev) =>
+        prev
+          ? { ...prev, email: updated.email, phone: updated.phone }
+          : prev
+      );
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!authService.getToken()) return;
+    syncProfile();
   }, []);
 
   return (
@@ -85,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        updateProfile: updateProfileFn,
       }}
     >
       {children}
