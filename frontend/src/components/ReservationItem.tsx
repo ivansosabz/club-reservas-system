@@ -1,8 +1,10 @@
 import type { Reserva } from "../types/reserva";
 import "./ReservationItem.css";
 
-function formatTime(value: string) {
-  return value ? value.slice(0, 5) : "";
+function fmt(dt: string) {
+  const d = dt.slice(0, 10);
+  const t = dt.slice(11, 16);
+  return { date: d, time: t };
 }
 
 interface ReservationItemProps {
@@ -13,8 +15,10 @@ interface ReservationItemProps {
 }
 
 function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: ReservationItemProps) {
-  const { resource_name, date, end_date, start_time, end_time, status } = reservation;
-  const isMultiDay = end_date && end_date !== date;
+  const { resource_name, start_datetime, end_datetime, status } = reservation;
+  const start = fmt(start_datetime);
+  const end = fmt(end_datetime);
+  const isMultiDay = start.date !== end.date;
 
   return (
     <li className="reservation-card">
@@ -25,10 +29,10 @@ function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: 
 
         <div className="reservation-card__details">
           <p>
-            <span>Fecha:</span> {isMultiDay ? `${date} a ${end_date}` : date}
+            <span>Fecha:</span> {isMultiDay ? `${start.date} a ${end.date}` : start.date}
           </p>
           <p>
-            <span>Hora:</span> {formatTime(start_time)} - {formatTime(end_time)}
+            <span>Hora:</span> {start.time} - {end.time}
           </p>
           <p>
             <span>Estado:</span> {status || "Pendiente"}

@@ -4,10 +4,8 @@ export interface Reserva {
   user_username?: string;
   resource: number;
   resource_name?: string;
-  date: string;
-  end_date?: string | null;
-  start_time: string;
-  end_time: string;
+  start_datetime: string;
+  end_datetime: string;
   status?: string;
   notes?: string | null;
   created_at?: string;
@@ -17,19 +15,15 @@ export interface Reserva {
 export interface CrearReservaPayload {
   user: number;
   resource: number;
-  date: string;
-  end_date?: string;
-  start_time: string;
-  end_time: string;
+  start_datetime: string;
+  end_datetime: string;
   notes?: string;
 }
 
 export interface ActualizarReservaPayload {
   resource?: number;
-  date?: string;
-  end_date?: string;
-  start_time?: string;
-  end_time?: string;
+  start_datetime?: string;
+  end_datetime?: string;
   status?: string;
   notes?: string;
 }

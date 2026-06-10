@@ -11,10 +11,8 @@ function NewReservationPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [resource, setResource] = useState("");
-  const [date, setDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startDatetime, setStartDatetime] = useState("");
+  const [endDatetime, setEndDatetime] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
@@ -27,21 +25,14 @@ function NewReservationPage() {
     event.preventDefault();
     setSubmitError("");
 
-    if (!resource || !date || !startTime || !endTime) {
+    if (!resource || !startDatetime || !endDatetime) {
       setSubmitError("Completa todos los campos.");
       return;
     }
 
-    if (endDate && endDate < date) {
-      setSubmitError("La fecha de fin no puede ser anterior a la fecha de inicio.");
+    if (startDatetime >= endDatetime) {
+      setSubmitError("La fecha/hora de fin debe ser posterior a la de inicio.");
       return;
-    }
-
-    if (!endDate || endDate === date) {
-      if (startTime >= endTime) {
-        setSubmitError("La hora de inicio debe ser menor a la de fin.");
-        return;
-      }
     }
 
     setIsSubmitting(true);
@@ -50,13 +41,9 @@ function NewReservationPage() {
       const payload: CrearReservaPayload = {
         user: user!.id,
         resource: Number(resource),
-        date,
-        start_time: startTime,
-        end_time: endTime,
+        start_datetime: startDatetime + ":00",
+        end_datetime: endDatetime + ":00",
       };
-      if (endDate && endDate !== date) {
-        payload.end_date = endDate;
-      }
 
       await crearReserva(payload);
 
@@ -116,46 +103,24 @@ function NewReservationPage() {
         </div>
 
         <div className="form-group">
-          <label>Fecha de inicio</label>
+          <label>Inicio</label>
           <input
             className="form-input"
-            type="date"
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
+            type="datetime-local"
+            value={startDatetime}
+            onChange={(event) => setStartDatetime(event.target.value)}
           />
         </div>
 
         <div className="form-group">
-          <label>Fecha de fin <span className="form-hint">(opcional, si es varios dias)</span></label>
+          <label>Fin</label>
           <input
             className="form-input"
-            type="date"
-            value={endDate}
-            min={date || undefined}
-            onChange={(event) => setEndDate(event.target.value)}
+            type="datetime-local"
+            value={endDatetime}
+            min={startDatetime || undefined}
+            onChange={(event) => setEndDatetime(event.target.value)}
           />
-        </div>
-
-        <div className="time-grid">
-          <div className="form-group">
-            <label>Hora de inicio</label>
-            <input
-              className="form-input"
-              type="time"
-              value={startTime}
-              onChange={(event) => setStartTime(event.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Hora de fin</label>
-            <input
-              className="form-input"
-              type="time"
-              value={endTime}
-              onChange={(event) => setEndTime(event.target.value)}
-            />
-          </div>
         </div>
 
         <button

@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import datetime
 
 from django.contrib.auth.models import User
 from rest_framework import status
@@ -225,9 +225,8 @@ class ResourceAPITest(APITestCase):
         Reservation.objects.create(
             user=self.user,
             resource=resource,
-            date=date(2030, 6, 1),
-            start_time=time(10, 0),
-            end_time=time(11, 0),
+            start_datetime=datetime(2030, 6, 1, 10, 0),
+            end_datetime=datetime(2030, 6, 1, 11, 0),
         )
         response = self.client.delete(
             f"/api/resources/{resource.pk}/"

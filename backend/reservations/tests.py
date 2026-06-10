@@ -1,19 +1,16 @@
-from datetime import date, time
+from datetime import datetime
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 from resources.models import Resource, ResourceType
 from .models import Reservation
 
 
-def _equal_dates(d1, d2):
-    """Compare two dates allowing string or date objects."""
-    if isinstance(d1, str):
-        d1 = date.fromisoformat(d1)
-    if isinstance(d2, str):
-        d2 = date.fromisoformat(d2)
-    return d1 == d2
+def _dt(*args):
+    return timezone.make_aware(datetime(*args))
 
 
 class ReservationModelTest(APITestCase):
@@ -39,19 +36,16 @@ class ReservationModelTest(APITestCase):
     def _create_reservation(
         self,
         resource=None,
-        date_value=None,
-        start=None,
-        end=None,
+        start_dt=None,
+        end_dt=None,
         user=None,
         status_value="pending",
     ):
-        """Helper to build a Reservation instance and call full_clean()."""
         r = Reservation(
             user=user or self.user,
             resource=resource or self.resource,
-            date=date_value or date(2026, 6, 15),
-            start_time=start or time(10, 0),
-            end_time=end or time(11, 0),
+            start_datetime=start_dt or _dt(2026, 6, 15, 10, 0),
+            end_datetime=end_dt or _dt(2026, 6, 15, 11, 0),
             status=status_value,
         )
         r.full_clean()
@@ -66,13 +60,15 @@ class ReservationModelTest(APITestCase):
     def test_end_time_before_start_time_raises_error(self):
         with self.assertRaises(ValidationError):
             self._create_reservation(
-                start=time(11, 0), end=time(10, 0)
+                start_dt=_dt(2026, 6, 15, 11, 0),
+                end_dt=_dt(2026, 6, 15, 10, 0),
             )
 
     def test_end_time_equal_to_start_time_raises_error(self):
         with self.assertRaises(ValidationError):
             self._create_reservation(
-                start=time(10, 0), end=time(10, 0)
+                start_dt=_dt(2026, 6, 15, 10, 0),
+                end_dt=_dt(2026, 6, 15, 10, 0),
             )
 
     def test_inactive_resource_raises_error(self):
@@ -85,19 +81,37 @@ class ReservationModelTest(APITestCase):
             self._create_reservation()
 
     def test_overlap_start_within_existing_raises_error(self):
-        self._create_reservation(start=time(10, 0), end=time(12, 0))
+        self._create_reservation(
+            start_dt=_dt(2026, 6, 15, 10, 0),
+            end_dt=_dt(2026, 6, 15, 12, 0),
+        )
         with self.assertRaises(ValidationError):
-            self._create_reservation(start=time(11, 0), end=time(13, 0))
+            self._create_reservation(
+                start_dt=_dt(2026, 6, 15, 11, 0),
+                end_dt=_dt(2026, 6, 15, 13, 0),
+            )
 
     def test_overlap_end_within_existing_raises_error(self):
-        self._create_reservation(start=time(10, 0), end=time(12, 0))
+        self._create_reservation(
+            start_dt=_dt(2026, 6, 15, 10, 0),
+            end_dt=_dt(2026, 6, 15, 12, 0),
+        )
         with self.assertRaises(ValidationError):
-            self._create_reservation(start=time(9, 0), end=time(11, 0))
+            self._create_reservation(
+                start_dt=_dt(2026, 6, 15, 9, 0),
+                end_dt=_dt(2026, 6, 15, 11, 0),
+            )
 
     def test_overlap_encompasses_existing_raises_error(self):
-        self._create_reservation(start=time(10, 0), end=time(11, 0))
+        self._create_reservation(
+            start_dt=_dt(2026, 6, 15, 10, 0),
+            end_dt=_dt(2026, 6, 15, 11, 0),
+        )
         with self.assertRaises(ValidationError):
-            self._create_reservation(start=time(9, 0), end=time(12, 0))
+            self._create_reservation(
+                start_dt=_dt(2026, 6, 15, 9, 0),
+                end_dt=_dt(2026, 6, 15, 12, 0),
+            )
 
     def test_different_resource_no_overlap(self):
         other = Resource.objects.create(
@@ -112,9 +126,10 @@ class ReservationModelTest(APITestCase):
     def test_different_date_no_overlap(self):
         self._create_reservation()
         reservation = self._create_reservation(
-            date_value=date(2026, 6, 16)
+            start_dt=_dt(2026, 6, 16, 10, 0),
+            end_dt=_dt(2026, 6, 16, 11, 0),
         )
-        self.assertEqual(str(reservation.date), "2026-06-16")
+        self.assertEqual(reservation.start_datetime.date().isoformat(), "2026-06-16")
 
     def test_cancelled_reservation_does_not_block_new(self):
         r1 = self._create_reservation()
@@ -124,19 +139,27 @@ class ReservationModelTest(APITestCase):
         self.assertEqual(r2.status, "pending")
 
     def test_adjacent_times_no_overlap(self):
-        self._create_reservation(start=time(10, 0), end=time(11, 0))
-        reservation = self._create_reservation(
-            start=time(11, 0), end=time(12, 0)
+        self._create_reservation(
+            start_dt=_dt(2026, 6, 15, 10, 0),
+            end_dt=_dt(2026, 6, 15, 11, 0),
         )
-        self.assertEqual(reservation.start_time, time(11, 0))
+        reservation = self._create_reservation(
+            start_dt=_dt(2026, 6, 15, 11, 0),
+            end_dt=_dt(2026, 6, 15, 12, 0),
+        )
+        self.assertEqual(reservation.start_datetime, _dt(2026, 6, 15, 11, 0))
 
     def test_update_to_overlapping_time_raises_error(self):
-        self._create_reservation(start=time(10, 0), end=time(11, 0))
-        r2 = self._create_reservation(
-            start=time(12, 0), end=time(13, 0)
+        self._create_reservation(
+            start_dt=_dt(2026, 6, 15, 10, 0),
+            end_dt=_dt(2026, 6, 15, 11, 0),
         )
-        r2.start_time = time(10, 30)
-        r2.end_time = time(11, 30)
+        r2 = self._create_reservation(
+            start_dt=_dt(2026, 6, 15, 12, 0),
+            end_dt=_dt(2026, 6, 15, 13, 0),
+        )
+        r2.start_datetime = _dt(2026, 6, 15, 10, 30)
+        r2.end_datetime = _dt(2026, 6, 15, 11, 30)
         with self.assertRaises(ValidationError):
             r2.full_clean()
 
@@ -144,84 +167,55 @@ class ReservationModelTest(APITestCase):
         r = Reservation(
             user=self.user,
             resource=self.resource,
-            date=date(2026, 6, 10),
-            end_date=date(2026, 6, 12),
-            start_time=time(10, 0),
-            end_time=time(18, 0),
+            start_datetime=_dt(2026, 6, 10, 10, 0),
+            end_datetime=_dt(2026, 6, 12, 18, 0),
         )
         r.full_clean()
         r.save()
-        self.assertEqual(r.end_date, date(2026, 6, 12))
+        self.assertEqual(r.end_datetime, _dt(2026, 6, 12, 18, 0))
 
     def test_end_date_before_start_date_raises_error(self):
         with self.assertRaises(ValidationError):
             r = Reservation(
                 user=self.user,
                 resource=self.resource,
-                date=date(2026, 6, 15),
-                end_date=date(2026, 6, 14),
-                start_time=time(10, 0),
-                end_time=time(11, 0),
+                start_datetime=_dt(2026, 6, 15, 10, 0),
+                end_datetime=_dt(2026, 6, 14, 11, 0),
             )
             r.full_clean()
 
-    def test_multi_day_same_day_still_validates_time(self):
-        with self.assertRaises(ValidationError):
-            self._create_reservation(
-                start=time(11, 0), end=time(10, 0)
-            )
-
     def test_multi_day_overlap_with_single_day(self):
         self._create_reservation(
-            date_value=date(2026, 6, 10),
-            start=time(10, 0),
-            end=time(12, 0),
+            start_dt=_dt(2026, 6, 10, 10, 0),
+            end_dt=_dt(2026, 6, 10, 12, 0),
         )
         with self.assertRaises(ValidationError):
             r = Reservation(
                 user=self.user,
                 resource=self.resource,
-                date=date(2026, 6, 9),
-                end_date=date(2026, 6, 11),
-                start_time=time(8, 0),
-                end_time=time(18, 0),
+                start_datetime=_dt(2026, 6, 9, 8, 0),
+                end_datetime=_dt(2026, 6, 11, 18, 0),
             )
             r.full_clean()
 
     def test_multi_day_no_overlap_when_ends_before(self):
         self._create_reservation(
-            date_value=date(2026, 6, 12),
-            start=time(10, 0),
-            end=time(12, 0),
+            start_dt=_dt(2026, 6, 12, 10, 0),
+            end_dt=_dt(2026, 6, 12, 12, 0),
         )
         r = Reservation(
             user=self.user,
             resource=self.resource,
-            date=date(2026, 6, 9),
-            end_date=date(2026, 6, 11),
-            start_time=time(8, 0),
-            end_time=time(20, 0),
+            start_datetime=_dt(2026, 6, 9, 8, 0),
+            end_datetime=_dt(2026, 6, 11, 20, 0),
         )
         r.full_clean()
         r.save()
-        self.assertEqual(r.end_date, date(2026, 6, 11))
-
-    def test_multi_day_defaults_end_date_to_date(self):
-        r = Reservation(
-            user=self.user,
-            resource=self.resource,
-            date=date(2026, 6, 15),
-            start_time=time(10, 0),
-            end_time=time(11, 0),
-        )
-        r.full_clean()
-        r.save()
-        self.assertIsNotNone(r.end_date)
-        self.assertTrue(_equal_dates(r.end_date, r.date))
+        self.assertEqual(r.end_datetime, _dt(2026, 6, 11, 20, 0))
 
     def test_str_representation(self):
         reservation = self._create_reservation()
-        expected = "Cancha 1 — 2026-06-15 10:00:00-11:00:00"
+        expected = "Cancha 1 — 15/06 10:00-15/06 11:00"
         self.assertEqual(str(reservation), expected)
 
 
@@ -257,9 +251,8 @@ class ReservationAPITest(APITestCase):
         payload = {
             "user": self.user.pk,
             "resource": self.resource.pk,
-            "date": "2026-07-01",
-            "start_time": "09:00",
-            "end_time": "10:00",
+            "start_datetime": "2026-07-01T09:00:00",
+            "end_datetime": "2026-07-01T10:00:00",
         }
         payload.update(overrides)
         return payload
@@ -296,7 +289,10 @@ class ReservationAPITest(APITestCase):
     def test_create_end_time_before_start_returns_400(self):
         response = self.client.post(
             self.list_url,
-            self._valid_payload(start_time="11:00", end_time="10:00"),
+            self._valid_payload(
+                start_datetime="2026-07-01T11:00:00",
+                end_datetime="2026-07-01T10:00:00",
+            ),
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -318,22 +314,20 @@ class ReservationAPITest(APITestCase):
         response = self.client.post(
             self.list_url,
             self._valid_payload(
-                date="2026-07-01",
-                end_date="2026-07-03",
-                start_time="09:00",
-                end_time="18:00",
+                start_datetime="2026-07-01T09:00:00",
+                end_datetime="2026-07-03T18:00:00",
             ),
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["end_date"], "2026-07-03")
+        self.assertEqual(response.data["end_datetime"][:10], "2026-07-03")
 
     def test_create_multi_day_invalid_date_order_returns_400(self):
         response = self.client.post(
             self.list_url,
             self._valid_payload(
-                date="2026-07-05",
-                end_date="2026-07-03",
+                start_datetime="2026-07-05T09:00:00",
+                end_datetime="2026-07-03T10:00:00",
             ),
             format="json",
         )
@@ -376,21 +370,23 @@ class ReservationAPITest(APITestCase):
         r1 = self.client.post(
             self.list_url,
             self._valid_payload(
-                start_time="09:00", end_time="10:00"
+                start_datetime="2026-07-01T09:00:00",
+                end_datetime="2026-07-01T10:00:00",
             ),
             format="json",
         )
         r2 = self.client.post(
             self.list_url,
             self._valid_payload(
-                start_time="11:00", end_time="12:00"
+                start_datetime="2026-07-01T11:00:00",
+                end_datetime="2026-07-01T12:00:00",
             ),
             format="json",
         )
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.patch(
             self._detail_url(r2.data["id"]),
-            {"start_time": "09:30", "end_time": "10:30"},
+            {"start_datetime": "2026-07-01T09:30:00", "end_datetime": "2026-07-01T10:30:00"},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -402,7 +398,8 @@ class ReservationAPITest(APITestCase):
         self.client.post(
             self.list_url,
             self._valid_payload(
-                start_time="11:00", end_time="12:00"
+                start_datetime="2026-07-01T11:00:00",
+                end_datetime="2026-07-01T12:00:00",
             ),
             format="json",
         )
@@ -485,10 +482,10 @@ class ReservationAPITest(APITestCase):
 
     def test_filter_by_date_from(self):
         self.client.post(
-            self.list_url, self._valid_payload(date="2026-07-01"), format="json"
+            self.list_url, self._valid_payload(start_datetime="2026-07-01T09:00:00", end_datetime="2026-07-01T10:00:00"), format="json"
         )
         self.client.post(
-            self.list_url, self._valid_payload(date="2026-07-05"), format="json"
+            self.list_url, self._valid_payload(start_datetime="2026-07-05T09:00:00", end_datetime="2026-07-05T10:00:00"), format="json"
         )
         response = self.client.get(
             self.list_url, {"date_from": "2026-07-03"}
@@ -497,10 +494,10 @@ class ReservationAPITest(APITestCase):
 
     def test_filter_by_date_range(self):
         self.client.post(
-            self.list_url, self._valid_payload(date="2026-07-01"), format="json"
+            self.list_url, self._valid_payload(start_datetime="2026-07-01T09:00:00", end_datetime="2026-07-01T10:00:00"), format="json"
         )
         self.client.post(
-            self.list_url, self._valid_payload(date="2026-07-10"), format="json"
+            self.list_url, self._valid_payload(start_datetime="2026-07-10T09:00:00", end_datetime="2026-07-10T10:00:00"), format="json"
         )
         response = self.client.get(
             self.list_url, {"date_from": "2026-07-01", "date_to": "2026-07-05"}
@@ -513,7 +510,7 @@ class ReservationAPITest(APITestCase):
         )
         self.client.post(
             self.list_url,
-            self._valid_payload(start_time="11:00", end_time="12:00"),
+            self._valid_payload(start_datetime="2026-07-01T11:00:00", end_datetime="2026-07-01T12:00:00"),
             format="json",
         )
         r1 = Reservation.objects.first()
@@ -553,12 +550,13 @@ class ReservationAPITest(APITestCase):
 
     def test_pagination_default_page_size(self):
         for i in range(25):
+            h = 9 + i // 60
+            m = i % 60
             self.client.post(
                 self.list_url,
                 self._valid_payload(
-                    date="2026-07-01",
-                    start_time=f"{9 + i // 60:02d}:{i % 60:02d}",
-                    end_time=f"{9 + i // 60:02d}:{(i % 60) + 1:02d}",
+                    start_datetime=f"2026-07-01T{h:02d}:{m:02d}:00",
+                    end_datetime=f"2026-07-01T{h:02d}:{m + 1:02d}:00",
                 ),
                 format="json",
             )
@@ -569,12 +567,13 @@ class ReservationAPITest(APITestCase):
 
     def test_pagination_custom_page_size(self):
         for i in range(10):
+            h = 9 + i // 60
+            m = i % 60
             self.client.post(
                 self.list_url,
                 self._valid_payload(
-                    date="2026-07-01",
-                    start_time=f"{9 + i // 60:02d}:{i % 60:02d}",
-                    end_time=f"{9 + i // 60:02d}:{(i % 60) + 1:02d}",
+                    start_datetime=f"2026-07-01T{h:02d}:{m:02d}:00",
+                    end_datetime=f"2026-07-01T{h:02d}:{m + 1:02d}:00",
                 ),
                 format="json",
             )
@@ -587,12 +586,13 @@ class ReservationAPITest(APITestCase):
 
     def test_pagination_second_page(self):
         for i in range(25):
+            h = 9 + i // 60
+            m = i % 60
             self.client.post(
                 self.list_url,
                 self._valid_payload(
-                    date="2026-07-01",
-                    start_time=f"{9 + i // 60:02d}:{i % 60:02d}",
-                    end_time=f"{9 + i // 60:02d}:{(i % 60) + 1:02d}",
+                    start_datetime=f"2026-07-01T{h:02d}:{m:02d}:00",
+                    end_datetime=f"2026-07-01T{h:02d}:{m + 1:02d}:00",
                 ),
                 format="json",
             )
@@ -604,17 +604,17 @@ class ReservationAPITest(APITestCase):
 
     def test_ordering_desc(self):
         self.client.post(
-            self.list_url, self._valid_payload(date="2026-07-01"), format="json"
+            self.list_url, self._valid_payload(start_datetime="2026-07-01T09:00:00", end_datetime="2026-07-01T10:00:00"), format="json"
         )
         self.client.post(
-            self.list_url, self._valid_payload(date="2026-07-10"), format="json"
+            self.list_url, self._valid_payload(start_datetime="2026-07-10T09:00:00", end_datetime="2026-07-10T10:00:00"), format="json"
         )
         response = self.client.get(
-            self.list_url, {"ordering": "-date"}
+            self.list_url, {"ordering": "-start_datetime"}
         )
         results = response.data["results"]
-        self.assertEqual(results[0]["date"], "2026-07-10")
-        self.assertEqual(results[1]["date"], "2026-07-01")
+        self.assertEqual(results[0]["start_datetime"][:10], "2026-07-10")
+        self.assertEqual(results[1]["start_datetime"][:10], "2026-07-01")
 
     def test_non_staff_delete_returns_204(self):
         create_resp = self.client.post(

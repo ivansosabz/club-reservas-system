@@ -22,11 +22,11 @@ def reservation_list_create(request):
 
         date_from = request.query_params.get("date_from")
         if date_from:
-            queryset = queryset.filter(date__gte=date_from)
+            queryset = queryset.filter(start_datetime__gte=date_from)
 
         date_to = request.query_params.get("date_to")
         if date_to:
-            queryset = queryset.filter(date__lte=date_to)
+            queryset = queryset.filter(start_datetime__lte=date_to)
 
         status_param = request.query_params.get("status")
         if status_param:
@@ -44,8 +44,8 @@ def reservation_list_create(request):
                 | Q(user__username__icontains=search)
             )
 
-        ordering = request.query_params.get("ordering", "date")
-        queryset = queryset.order_by(ordering, "start_time")
+        ordering = request.query_params.get("ordering", "start_datetime")
+        queryset = queryset.order_by(ordering)
 
         paginator = ReservationPagination()
         page = paginator.paginate_queryset(queryset, request)

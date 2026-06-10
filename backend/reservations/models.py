@@ -25,10 +25,8 @@ class Reservation(models.Model):
         on_delete=models.PROTECT,
         related_name='reservations',
     )
-    date = models.DateField()
-    end_date = models.DateField(null=True, blank=True)
-    start_time = models.TimeField()
-    end_time = models.TimeField()
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -41,22 +39,13 @@ class Reservation(models.Model):
     class Meta:
         verbose_name = "Reserva"
         verbose_name_plural = "Reservas"
-        ordering = ['date', 'start_time']
+        ordering = ['start_datetime']
 
     def clean(self):
-        if self.end_date is None:
-            self.end_date = self.date
-
-        if self.end_date < self.date:
+        if self.start_datetime >= self.end_datetime:
             raise ValidationError(
-                "La fecha de fin no puede ser anterior a la fecha de inicio."
+                "La fecha/hora de fin debe ser posterior a la de inicio."
             )
-
-        if self.end_date == self.date and self.start_time and self.end_time:
-            if self.end_time <= self.start_time:
-                raise ValidationError(
-                    "La hora de fin debe ser posterior a la hora de inicio."
-                )
 
         if self.resource and not self.resource.is_active:
             raise ValidationError(
@@ -66,9 +55,6 @@ class Reservation(models.Model):
         self._check_overlap()
 
     def _check_overlap(self):
-        self_start = datetime.combine(self.date, self.start_time)
-        self_end = datetime.combine(self.end_date, self.end_time)
-
         qs = Reservation.objects.filter(
             resource=self.resource,
             status__in=['pending', 'confirmed'],
@@ -77,11 +63,11 @@ class Reservation(models.Model):
             qs = qs.exclude(pk=self.pk)
 
         for other in qs:
-            other_start = datetime.combine(other.date, other.start_time)
-            other_end = datetime.combine(other.end_date or other.date, other.end_time)
-            if self_start < other_end and self_end > other_start:
+            if self.start_datetime < other.end_datetime and self.end_datetime > other.start_datetime:
                 raise ValidationError(
-                    "Ya existe una reserva para este recurso en ese horario."
+                    f"Conflicto con la reserva de {other.user.username} "
+                    f"({other.start_datetime.strftime('%d/%m %H:%M')} - "
+                    f"{other.end_datetime.strftime('%d/%m %H:%M')})"
                 )
 
     def save(self, *args, **kwargs):
@@ -89,4 +75,8 @@ class Reservation(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.resource} — {self.date} {self.start_time}-{self.end_time}"
+        return (
+            f"{self.resource} — "
+            f"{self.start_datetime.strftime('%d/%m %H:%M')}-"
+            f"{self.end_datetime.strftime('%d/%m %H:%M')}"
+        )

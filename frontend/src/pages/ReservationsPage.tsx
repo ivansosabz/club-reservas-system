@@ -58,10 +58,8 @@ function ReservationsPage() {
 
   const [editing, setEditing] = useState<Reserva | null>(null);
   const [editResource, setEditResource] = useState("");
-  const [editDate, setEditDate] = useState("");
-  const [editEndDate, setEditEndDate] = useState("");
-  const [editStartTime, setEditStartTime] = useState("");
-  const [editEndTime, setEditEndTime] = useState("");
+  const [editStartDatetime, setEditStartDatetime] = useState("");
+  const [editEndDatetime, setEditEndDatetime] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editError, setEditError] = useState("");
@@ -107,10 +105,8 @@ function ReservationsPage() {
   function openEdit(reservation: Reserva) {
     setEditing(reservation);
     setEditResource(String(reservation.resource));
-    setEditDate(reservation.date);
-    setEditEndDate(reservation.end_date ?? "");
-    setEditStartTime(reservation.start_time.slice(0, 5));
-    setEditEndTime(reservation.end_time.slice(0, 5));
+    setEditStartDatetime(reservation.start_datetime.slice(0, 16));
+    setEditEndDatetime(reservation.end_datetime.slice(0, 16));
     setEditStatus(reservation.status ?? "pending");
     setEditNotes(reservation.notes ?? "");
     setEditError("");
@@ -126,34 +122,24 @@ function ReservationsPage() {
     event.preventDefault();
     setEditError("");
 
-    if (!editResource || !editDate || !editStartTime || !editEndTime) {
+    if (!editResource || !editStartDatetime || !editEndDatetime) {
       setEditError("Completa todos los campos obligatorios.");
       return;
     }
-    if (editEndDate && editEndDate < editDate) {
-      setEditError("La fecha de fin no puede ser anterior a la fecha de inicio.");
+    if (editStartDatetime >= editEndDatetime) {
+      setEditError("La fecha/hora de fin debe ser posterior a la de inicio.");
       return;
-    }
-    if (!editEndDate || editEndDate === editDate) {
-      if (editStartTime >= editEndTime) {
-        setEditError("La hora de inicio debe ser menor a la de fin.");
-        return;
-      }
     }
 
     setIsEditing(true);
     try {
       const payload: ActualizarReservaPayload = {
         resource: Number(editResource),
-        date: editDate,
-        start_time: editStartTime,
-        end_time: editEndTime,
+        start_datetime: editStartDatetime + ":00",
+        end_datetime: editEndDatetime + ":00",
         status: editStatus,
         notes: editNotes || undefined,
       };
-      if (editEndDate && editEndDate !== editDate) {
-        payload.end_date = editEndDate;
-      }
       await actualizarReserva(editing!.id, payload);
       closeEdit();
       refresh();
@@ -350,43 +336,23 @@ function ReservationsPage() {
             </select>
           </div>
           <div className="form-group">
-            <label>Fecha de inicio</label>
+            <label>Inicio</label>
             <input
               className="form-input"
-              type="date"
-              value={editDate}
-              onChange={(e) => setEditDate(e.target.value)}
+              type="datetime-local"
+              value={editStartDatetime}
+              onChange={(e) => setEditStartDatetime(e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label>Fecha de fin <span className="form-hint">(opcional)</span></label>
+            <label>Fin</label>
             <input
               className="form-input"
-              type="date"
-              value={editEndDate}
-              min={editDate || undefined}
-              onChange={(e) => setEditEndDate(e.target.value)}
+              type="datetime-local"
+              value={editEndDatetime}
+              min={editStartDatetime || undefined}
+              onChange={(e) => setEditEndDatetime(e.target.value)}
             />
-          </div>
-          <div className="time-grid">
-            <div className="form-group">
-              <label>Hora inicio</label>
-              <input
-                className="form-input"
-                type="time"
-                value={editStartTime}
-                onChange={(e) => setEditStartTime(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label>Hora fin</label>
-              <input
-                className="form-input"
-                type="time"
-                value={editEndTime}
-                onChange={(e) => setEditEndTime(e.target.value)}
-              />
-            </div>
           </div>
           <div className="form-group">
             <label>Estado</label>

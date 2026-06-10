@@ -1,7 +1,8 @@
-from datetime import date, time
+from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from reservations.models import Reservation
 from resources.models import Resource, ResourceType
@@ -44,30 +45,33 @@ def _r(name):
     return Resource.objects.get(name=name)
 
 
+def _dt(*args):
+    return timezone.make_aware(datetime(*args))
+
+
 RESERVATIONS = [
-    {"user": "admin", "resource": "Cancha de tenis 1", "date": date(2026, 6, 10), "start": time(9, 0), "end": time(10, 30), "status": "confirmed"},
-    {"user": "juan", "resource": "Cancha de tenis 1", "date": date(2026, 6, 10), "start": time(11, 0), "end": time(12, 30), "status": "confirmed"},
-    {"user": "maria", "resource": "Cancha de tenis 2", "date": date(2026, 6, 10), "start": time(9, 0), "end": time(10, 0), "status": "pending"},
-    {"user": "carlos", "resource": "Cancha de futbol 1", "date": date(2026, 6, 11), "start": time(14, 0), "end": time(16, 0), "status": "confirmed"},
-    {"user": "juan", "resource": "Cancha de futbol 1", "date": date(2026, 6, 11), "start": time(16, 0), "end": time(18, 0), "status": "pending"},
-    {"user": "admin", "resource": "Salon A", "date": date(2026, 6, 12), "start": time(8, 0), "end": time(12, 0), "status": "confirmed"},
-    {"user": "maria", "resource": "Salon A", "date": date(2026, 6, 12), "start": time(13, 0), "end": time(17, 0), "status": "cancelled"},
-    {"user": "carlos", "resource": "Salon B", "date": date(2026, 6, 13), "start": time(10, 0), "end": time(12, 0), "status": "confirmed"},
-    {"user": "juan", "resource": "Piscina climatizada", "date": date(2026, 6, 14), "start": time(7, 0), "end": time(9, 0), "status": "confirmed"},
-    {"user": "maria", "resource": "Gimnasio principal", "date": date(2026, 6, 14), "start": time(10, 0), "end": time(11, 30), "status": "pending"},
-    {"user": "carlos", "resource": "Gimnasio principal", "date": date(2026, 6, 14), "start": time(14, 0), "end": time(15, 30), "status": "confirmed"},
-    {"user": "admin", "resource": "Sala de spinning", "date": date(2026, 6, 15), "start": time(8, 0), "end": time(9, 0), "status": "confirmed"},
-    {"user": "juan", "resource": "Cancha de tenis 1", "date": date(2026, 6, 15), "start": time(14, 0), "end": time(15, 30), "status": "confirmed"},
-    {"user": "maria", "resource": "Cancha de tenis 2", "date": date(2026, 6, 16), "start": time(10, 0), "end": time(11, 30), "status": "pending"},
-    {"user": "carlos", "resource": "Salon A", "date": date(2026, 6, 17), "start": time(9, 0), "end": time(13, 0), "status": "confirmed"},
-    {"user": "juan", "resource": "Piscina climatizada", "date": date(2026, 6, 18), "start": time(6, 0), "end": time(8, 0), "status": "confirmed"},
-    {"user": "admin", "resource": "Cancha de futbol 1", "date": date(2026, 6, 20), "start": time(10, 0), "end": time(12, 0), "status": "confirmed"},
-    {"user": "maria", "resource": "Cancha de futbol 1", "date": date(2026, 6, 20), "start": time(12, 0), "end": time(14, 0), "status": "pending"},
-    {"user": "carlos", "resource": "Gimnasio principal", "date": date(2026, 6, 21), "start": time(9, 0), "end": time(10, 0), "status": "cancelled"},
-    # Multi-day reservations
-    {"user": "admin", "resource": "Salon A", "date": date(2026, 6, 22), "end_date": date(2026, 6, 24), "start": time(9, 0), "end": time(18, 0), "status": "confirmed", "notes": "Conferencia de fin de semana"},
-    {"user": "juan", "resource": "Salon B", "date": date(2026, 6, 28), "end_date": date(2026, 6, 30), "start": time(10, 0), "end": time(17, 0), "status": "pending", "notes": "Taller de capacitacion"},
-    {"user": "maria", "resource": "Cancha de futbol 1", "date": date(2026, 6, 25), "end_date": date(2026, 6, 26), "start": time(8, 0), "end": time(20, 0), "status": "confirmed", "notes": "Torneo interno"},
+    {"user": "admin", "resource": "Cancha de tenis 1", "start_dt": _dt(2026, 6, 10, 9, 0), "end_dt": _dt(2026, 6, 10, 10, 30), "status": "confirmed"},
+    {"user": "juan", "resource": "Cancha de tenis 1", "start_dt": _dt(2026, 6, 10, 11, 0), "end_dt": _dt(2026, 6, 10, 12, 30), "status": "confirmed"},
+    {"user": "maria", "resource": "Cancha de tenis 2", "start_dt": _dt(2026, 6, 10, 9, 0), "end_dt": _dt(2026, 6, 10, 10, 0), "status": "pending"},
+    {"user": "carlos", "resource": "Cancha de futbol 1", "start_dt": _dt(2026, 6, 11, 14, 0), "end_dt": _dt(2026, 6, 11, 16, 0), "status": "confirmed"},
+    {"user": "juan", "resource": "Cancha de futbol 1", "start_dt": _dt(2026, 6, 11, 16, 0), "end_dt": _dt(2026, 6, 11, 18, 0), "status": "pending"},
+    {"user": "admin", "resource": "Salon A", "start_dt": _dt(2026, 6, 12, 8, 0), "end_dt": _dt(2026, 6, 12, 12, 0), "status": "confirmed"},
+    {"user": "maria", "resource": "Salon A", "start_dt": _dt(2026, 6, 12, 13, 0), "end_dt": _dt(2026, 6, 12, 17, 0), "status": "cancelled"},
+    {"user": "carlos", "resource": "Salon B", "start_dt": _dt(2026, 6, 13, 10, 0), "end_dt": _dt(2026, 6, 13, 12, 0), "status": "confirmed"},
+    {"user": "juan", "resource": "Piscina climatizada", "start_dt": _dt(2026, 6, 14, 7, 0), "end_dt": _dt(2026, 6, 14, 9, 0), "status": "confirmed"},
+    {"user": "maria", "resource": "Gimnasio principal", "start_dt": _dt(2026, 6, 14, 10, 0), "end_dt": _dt(2026, 6, 14, 11, 30), "status": "pending"},
+    {"user": "carlos", "resource": "Gimnasio principal", "start_dt": _dt(2026, 6, 14, 14, 0), "end_dt": _dt(2026, 6, 14, 15, 30), "status": "confirmed"},
+    {"user": "admin", "resource": "Sala de spinning", "start_dt": _dt(2026, 6, 15, 8, 0), "end_dt": _dt(2026, 6, 15, 9, 0), "status": "confirmed"},
+    {"user": "juan", "resource": "Cancha de tenis 1", "start_dt": _dt(2026, 6, 15, 14, 0), "end_dt": _dt(2026, 6, 15, 15, 30), "status": "confirmed"},
+    {"user": "maria", "resource": "Cancha de tenis 2", "start_dt": _dt(2026, 6, 16, 10, 0), "end_dt": _dt(2026, 6, 16, 11, 30), "status": "pending"},
+    {"user": "carlos", "resource": "Salon A", "start_dt": _dt(2026, 6, 17, 9, 0), "end_dt": _dt(2026, 6, 17, 13, 0), "status": "confirmed"},
+    {"user": "juan", "resource": "Piscina climatizada", "start_dt": _dt(2026, 6, 18, 6, 0), "end_dt": _dt(2026, 6, 18, 8, 0), "status": "confirmed"},
+    {"user": "admin", "resource": "Cancha de futbol 1", "start_dt": _dt(2026, 6, 20, 10, 0), "end_dt": _dt(2026, 6, 20, 12, 0), "status": "confirmed"},
+    {"user": "maria", "resource": "Cancha de futbol 1", "start_dt": _dt(2026, 6, 20, 12, 0), "end_dt": _dt(2026, 6, 20, 14, 0), "status": "pending"},
+    {"user": "carlos", "resource": "Gimnasio principal", "start_dt": _dt(2026, 6, 21, 9, 0), "end_dt": _dt(2026, 6, 21, 10, 0), "status": "cancelled"},
+    {"user": "admin", "resource": "Salon A", "start_dt": _dt(2026, 6, 22, 9, 0), "end_dt": _dt(2026, 6, 24, 18, 0), "status": "confirmed", "notes": "Conferencia de fin de semana"},
+    {"user": "juan", "resource": "Salon B", "start_dt": _dt(2026, 6, 28, 10, 0), "end_dt": _dt(2026, 6, 30, 17, 0), "status": "pending", "notes": "Taller de capacitacion"},
+    {"user": "maria", "resource": "Cancha de futbol 1", "start_dt": _dt(2026, 6, 25, 8, 0), "end_dt": _dt(2026, 6, 26, 20, 0), "status": "confirmed", "notes": "Torneo interno"},
 ]
 
 
@@ -115,14 +119,11 @@ class Command(BaseCommand):
 
         self.stdout.write("Creando reservas...")
         for r in RESERVATIONS:
-            end = r.get("end_date", r["date"])
             Reservation.objects.create(
                 user=_u(r["user"]),
                 resource=_r(r["resource"]),
-                date=r["date"],
-                end_date=end,
-                start_time=r["start"],
-                end_time=r["end"],
+                start_datetime=r["start_dt"],
+                end_datetime=r["end_dt"],
                 status=r["status"],
                 notes=r.get("notes", ""),
             )
