@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username,
         email,
         password,
+        password2: password,
       });
 
       if (!response.access) {
