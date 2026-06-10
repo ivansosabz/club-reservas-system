@@ -14,13 +14,37 @@ import type { ActualizarReservaPayload, Reserva, ReservaFilters } from "../types
 import Modal from "../components/Modal";
 import "./ReservationsPage.css";
 
+type TabId = "todas" | "proximas" | "historial" | "pendientes";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "todas", label: "Todas" },
+  { id: "proximas", label: "Proximas" },
+  { id: "historial", label: "Historial" },
+  { id: "pendientes", label: "Pendientes" },
+];
+
+function tabPreset(tab: TabId): ReservaFilters {
+  const now = new Date().toISOString();
+  switch (tab) {
+    case "proximas":
+      return { status: "pending,confirmed", end_from: now, ordering: "start_datetime" };
+    case "historial":
+      return { end_to: now, ordering: "-start_datetime" };
+    case "pendientes":
+      return { status: "pending", ordering: "start_datetime" };
+    default:
+      return {};
+  }
+}
+
 function ReservationsPage() {
   const location = useLocation();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const tab = (searchParams.get("tab") as TabId) || "todas";
   const page = Number(searchParams.get("page") || "1");
-  const pageSize = Number(searchParams.get("page_size") || "20");
+  const pageSize = Number(searchParams.get("page_size") || "10");
   const dateFrom = searchParams.get("date_from") || "";
   const dateTo = searchParams.get("date_to") || "";
   const statusFilter = searchParams.get("status") || "";
@@ -76,6 +100,19 @@ function ReservationsPage() {
     }
   }, [successMessage]);
 
+  function selectTab(id: TabId) {
+    const preset = tabPreset(id);
+    const next = new URLSearchParams();
+    next.set("tab", id);
+    next.set("page", "1");
+    if (preset.status) next.set("status", preset.status);
+    if (preset.end_from) next.set("end_from", preset.end_from);
+    if (preset.end_to) next.set("end_to", preset.end_to);
+    if (preset.ordering) next.set("ordering", preset.ordering);
+    if (searchTerm) next.set("search", searchTerm);
+    setSearchParams(next);
+  }
+
   function setFilter(key: string, value: string) {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -87,12 +124,23 @@ function ReservationsPage() {
       if (key !== "page") {
         next.delete("page");
       }
+      if (!next.has("tab")) {
+        next.set("tab", "todas");
+      }
       return next;
     });
   }
 
   function clearFilters() {
-    setSearchParams(new URLSearchParams());
+    const next = new URLSearchParams();
+    next.set("tab", tab);
+    next.set("page", "1");
+    const preset = tabPreset(tab);
+    if (preset.status) next.set("status", preset.status);
+    if (preset.end_from) next.set("end_from", preset.end_from);
+    if (preset.end_to) next.set("end_to", preset.end_to);
+    if (preset.ordering) next.set("ordering", preset.ordering);
+    setSearchParams(next);
   }
 
   function goToPage(p: number) {
@@ -101,6 +149,9 @@ function ReservationsPage() {
   }
 
   const hasFilters = dateFrom || dateTo || statusFilter || resourceFilter || searchTerm;
+
+  const showStatusFilter = tab === "todas";
+  const showDateFilters = tab === "todas";
 
   function openEdit(reservation: Reserva) {
     setEditing(reservation);
@@ -186,6 +237,19 @@ function ReservationsPage() {
         </p>
       </header>
 
+      <nav className="tabs-bar">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`tabs-bar__tab${tab === t.id ? " tabs-bar__tab--active" : ""}`}
+            onClick={() => selectTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
       <div className="reservations-filters">
         <input
           className="form-input filter-search"
@@ -194,30 +258,36 @@ function ReservationsPage() {
           value={searchTerm}
           onChange={(e) => setFilter("search", e.target.value)}
         />
-        <input
-          className="form-input"
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setFilter("date_from", e.target.value)}
-          title="Fecha desde"
-        />
-        <input
-          className="form-input"
-          type="date"
-          value={dateTo}
-          onChange={(e) => setFilter("date_to", e.target.value)}
-          title="Fecha hasta"
-        />
-        <select
-          className="form-input"
-          value={statusFilter}
-          onChange={(e) => setFilter("status", e.target.value)}
-        >
-          <option value="">Todos los estados</option>
-          <option value="pending">Pendiente</option>
-          <option value="confirmed">Confirmada</option>
-          <option value="cancelled">Cancelada</option>
-        </select>
+        {showDateFilters ? (
+          <>
+            <input
+              className="form-input"
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setFilter("date_from", e.target.value)}
+              title="Fecha desde"
+            />
+            <input
+              className="form-input"
+              type="date"
+              value={dateTo}
+              onChange={(e) => setFilter("date_to", e.target.value)}
+              title="Fecha hasta"
+            />
+          </>
+        ) : null}
+        {showStatusFilter ? (
+          <select
+            className="form-input"
+            value={statusFilter}
+            onChange={(e) => setFilter("status", e.target.value)}
+          >
+            <option value="">Todos los estados</option>
+            <option value="pending">Pendiente</option>
+            <option value="confirmed">Confirmada</option>
+            <option value="cancelled">Cancelada</option>
+          </select>
+        ) : null}
         {hasFilters ? (
           <button
             type="button"

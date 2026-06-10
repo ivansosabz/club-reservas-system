@@ -7,6 +7,8 @@ from .models import Reservation
 class ReservationSerializer(serializers.ModelSerializer):
     resource_name = serializers.CharField(source="resource.name", read_only=True)
     user_username = serializers.CharField(source="user.username", read_only=True)
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_phone = serializers.CharField(source="user.profile.phone", read_only=True)
 
     class Meta:
         model = Reservation
@@ -14,6 +16,8 @@ class ReservationSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "user_username",
+            "user_email",
+            "user_phone",
             "resource",
             "resource_name",
             "start_datetime",
@@ -41,12 +45,16 @@ class ReservationSerializer(serializers.ModelSerializer):
 class ReservationUpdateSerializer(serializers.ModelSerializer):
     resource_name = serializers.CharField(source="resource.name", read_only=True)
     user_username = serializers.CharField(source="user.username", read_only=True)
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_phone = serializers.CharField(source="user.profile.phone", read_only=True)
 
     class Meta:
         model = Reservation
         fields = [
             "id",
             "user_username",
+            "user_email",
+            "user_phone",
             "resource",
             "resource_name",
             "start_datetime",

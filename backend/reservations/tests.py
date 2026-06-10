@@ -616,6 +616,30 @@ class ReservationAPITest(APITestCase):
         self.assertEqual(results[0]["start_datetime"][:10], "2026-07-10")
         self.assertEqual(results[1]["start_datetime"][:10], "2026-07-01")
 
+    def test_filter_by_end_from(self):
+        self.client.post(
+            self.list_url, self._valid_payload(start_datetime="2026-07-01T09:00:00", end_datetime="2026-07-01T10:00:00"), format="json"
+        )
+        self.client.post(
+            self.list_url, self._valid_payload(start_datetime="2026-07-05T09:00:00", end_datetime="2026-07-05T10:00:00"), format="json"
+        )
+        response = self.client.get(
+            self.list_url, {"end_from": "2026-07-03T00:00:00"}
+        )
+        self.assertEqual(response.data["count"], 1)
+
+    def test_filter_by_end_to(self):
+        self.client.post(
+            self.list_url, self._valid_payload(start_datetime="2026-07-01T09:00:00", end_datetime="2026-07-01T10:00:00"), format="json"
+        )
+        self.client.post(
+            self.list_url, self._valid_payload(start_datetime="2026-07-05T09:00:00", end_datetime="2026-07-05T10:00:00"), format="json"
+        )
+        response = self.client.get(
+            self.list_url, {"end_to": "2026-07-03T00:00:00"}
+        )
+        self.assertEqual(response.data["count"], 1)
+
     def test_non_staff_delete_returns_204(self):
         create_resp = self.client.post(
             self.list_url, self._valid_payload(), format="json"

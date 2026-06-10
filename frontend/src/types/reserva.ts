@@ -2,6 +2,8 @@ export interface Reserva {
   id: number;
   user: number;
   user_username?: string;
+  user_email?: string | null;
+  user_phone?: string | null;
   resource: number;
   resource_name?: string;
   start_datetime: string;
@@ -40,6 +42,8 @@ export interface ReservaFilters {
   page_size?: number;
   date_from?: string;
   date_to?: string;
+  end_from?: string;
+  end_to?: string;
   status?: string;
   resource?: number;
   search?: string;

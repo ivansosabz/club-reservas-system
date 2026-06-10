@@ -15,7 +15,7 @@ interface ReservationItemProps {
 }
 
 function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: ReservationItemProps) {
-  const { resource_name, start_datetime, end_datetime, status } = reservation;
+  const { resource_name, start_datetime, end_datetime, status, user_email, user_phone, user_username } = reservation;
   const start = fmt(start_datetime);
   const end = fmt(end_datetime);
   const isMultiDay = start.date !== end.date;
@@ -38,6 +38,14 @@ function ReservationItem({ reservation, onEdit, onDelete, isDeleting = false }: 
             <span>Estado:</span> {status || "Pendiente"}
           </p>
         </div>
+
+        {user_username ? (
+          <div className="reservation-card__contact">
+            <p><span>Usuario:</span> {user_username}</p>
+            {user_email ? <p><span>Email:</span> {user_email}</p> : null}
+            {user_phone ? <p><span>Tel:</span> {user_phone}</p> : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="reservation-card__actions">

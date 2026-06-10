@@ -24,6 +24,40 @@
   flex: 2 1 240px;
 }
 
+.tabs-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1.25rem;
+  padding: 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: rgba(8, 13, 18, 0.46);
+}
+
+.tabs-bar__tab {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--app-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tabs-bar__tab:hover {
+  color: var(--app-heading);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tabs-bar__tab--active {
+  background: var(--app-surface);
+  color: var(--app-heading);
+  box-shadow: var(--app-shadow);
+}
+
 .pagination-bar {
   display: flex;
   align-items: center;

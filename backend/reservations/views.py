@@ -33,6 +33,14 @@ def reservation_list_create(request):
             statuses = status_param.split(",")
             queryset = queryset.filter(status__in=statuses)
 
+        end_from = request.query_params.get("end_from")
+        if end_from:
+            queryset = queryset.filter(end_datetime__gte=end_from)
+
+        end_to = request.query_params.get("end_to")
+        if end_to:
+            queryset = queryset.filter(end_datetime__lte=end_to)
+
         resource = request.query_params.get("resource")
         if resource:
             queryset = queryset.filter(resource_id=resource)
