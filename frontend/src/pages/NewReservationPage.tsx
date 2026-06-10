@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getRecursos } from "../services/recursoService";
 import { crearReserva } from "../services/reservaService";
 import type { Recurso } from "../types/recurso";

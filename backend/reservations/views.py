@@ -28,18 +28,16 @@ def reservation_list_create(request):
     if request.method == "GET":
         # select_related reduce queries: en vez de N+1, hace un solo JOIN
         # por cada FK que vamos a mostrar (resource y user).
-        reservations = (
-            Reservation.objects
-            .select_related("resource", "user")
-            .all()
-        )
+        reservations = Reservation.objects.select_related("resource", "user").all()
+        # sin many=True, el serializer espera un solo objeto, no una lista.
         serializer = ReservationSerializer(reservations, many=True)
         return Response(serializer.data)
 
-    serializer = ReservationSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    else:  # POST
+        serializer = ReservationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET", "PATCH"])
@@ -61,12 +59,12 @@ def reservation_detail_update(request, pk):
         serializer = ReservationSerializer(reservation)
         return Response(serializer.data)
 
-    # PATCH usa el restringido (user y resource no se pueden cambiar)
-    serializer = ReservationUpdateSerializer(
-        reservation,
-        data=request.data,
-        partial=True,
-    )
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response(serializer.data)
+    else:  # PATCH — user y resource no se pueden cambiar
+        serializer = ReservationUpdateSerializer(
+            reservation,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

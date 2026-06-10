@@ -22,3 +22,9 @@ urlpatterns = [
         name="reservation-detail-update",
     ),
 ]
+"""
+quiero que empezemos de nuevo este proyecto y que lo hagamos bien desde el inicio para que cualquier usuario pueda registrarse, iniciar sesion y que pueda 
+registrar nombres de personas con los que va hacer los turnos rotativos tal cual como lo hace este sistema con mi tio y con mi padre para cuidarle a 
+abuela, quiero que me sugieras cambios pero no quiero que te divagues en cada por favor, ademas dame una guia cortta de donde empezar para entender bien 
+este proyecto
+"""
